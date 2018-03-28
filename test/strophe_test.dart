@@ -1,4 +1,4 @@
-import 'package:strophe/strophe.dart';
+import 'package:strophe/main.dart';
 import 'package:test/test.dart';
 
 void main() {

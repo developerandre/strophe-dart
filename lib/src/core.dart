@@ -175,7 +175,7 @@ class Strophe {
      *  _Private_ variable that caches a DOM document to
      *  generate elements.
      */
-  static xml.XmlBuilder _xmlGenerator = null;
+  static xml.XmlBuilder _xmlGenerator;
 
   /** PrivateFunction: _makeGenerator
      *  _Private_ function that creates a dummy XML DOM document to serve as

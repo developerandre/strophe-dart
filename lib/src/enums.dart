@@ -588,7 +588,7 @@ class StropheConnection {
     return this._idleTimeout;
   }
 
-  void set idleTimeout(Timer newTimeout) {
+  set idleTimeout(Timer newTimeout) {
     this._idleTimeout = newTimeout;
   }
 
@@ -1052,7 +1052,7 @@ class StropheConnection {
                                                                                      */
   sendPresence(xml.XmlNode elem,
       [Function callback, Function errback, int timeout]) {
-    var timeoutHandler = null;
+    var timeoutHandler;
     elem = elem.root;
     xml.XmlAttribute firstWhere =
         elem.attributes.firstWhere((xml.XmlAttribute attr) {
@@ -1118,7 +1118,7 @@ class StropheConnection {
                                                                                      *    The id used to send the IQ.
                                                                                     */
   sendIQ(xml.XmlNode elem, Function callback, Function errback, int timeout) {
-    var timeoutHandler = null;
+    var timeoutHandler;
     elem = elem.root;
 
     xml.XmlAttribute firstWhere =
@@ -1397,7 +1397,7 @@ class StropheConnection {
 
     Strophe.info("Disconnect was called because: " + reason);
     if (this.connected) {
-      StanzaBuilder pres = null;
+      StanzaBuilder pres;
       this.disconnecting = true;
       if (this.authenticated) {
         pres = Strophe
@@ -1774,7 +1774,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *          valid SASL mechanism was found with which authentication could be
                                                                                                                                                                                                                                                                                                                                                                                                              *          started.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  bool _attemptSASLAuth(List<StropheSASLMechanism> mechanisms) {
+  Future<bool> _attemptSASLAuth(List<StropheSASLMechanism> mechanisms) async {
     mechanisms = this.sortMechanismsByPriority(mechanisms ?? []);
 
     bool mechanism_found = false;
@@ -1797,7 +1797,7 @@ class StropheConnection {
         'mechanism': this._sasl_mechanism.name
       });
       if (this._sasl_mechanism.isClientFirst) {
-        String response = this._sasl_mechanism.onChallenge(this, null);
+        String response = await this._sasl_mechanism.onChallenge(this, null);
         request_auth_exchange.t(base64.encode(response.runes.toList()));
       }
       this.send(request_auth_exchange.tree());
@@ -1845,8 +1845,8 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *    (Array) matched - Array of SASL mechanisms supported.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  authenticate(List<StropheSASLMechanism> matched) {
-    if (!this._attemptSASLAuth(matched)) {
+  authenticate(List<StropheSASLMechanism> matched) async {
+    if (!await this._attemptSASLAuth(matched)) {
       this._attemptLegacyAuth();
     }
   }
@@ -1855,10 +1855,10 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for the SASL challenge
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  _sasl_challenge_cb(elem) {
+  _sasl_challenge_cb(elem) async {
     String challenge =
         new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
-    String response = this._sasl_mechanism.onChallenge(this, challenge);
+    String response = await this._sasl_mechanism.onChallenge(this, challenge);
     StanzaBuilder stanza =
         Strophe.$build('response', {'xmlns': Strophe.NS['SASL']});
     if (response != "") {
@@ -1925,7 +1925,7 @@ class StropheConnection {
           new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
       RegExp attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
       List<Match> matches = attribMatch.allMatches(success);
-      if (matches[1] == "v") {
+      if (matches[1].group(0) == "v") {
         serverSignature = matches[2].group(0);
       }
 
@@ -2365,7 +2365,7 @@ class StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                    *    (String) Mechanism response.
                                                                                                                                                                                                                                                                                                                                                                                                                                    */
   /* jshint unused:false */
-  String onChallenge(StropheConnection connection,
+  Future<String> onChallenge(StropheConnection connection,
       [String challenge, String test_cnonce]) {
     throw {'message': "You should implement challenge handling!"};
   }
@@ -2418,8 +2418,8 @@ class StropheSASLPlain extends StropheSASLMechanism {
     return connection.authcid != null;
   }
 
-  String onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) {
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, dynamic Stringtest_cnonce]) async {
     var auth_str = connection.authzid;
     auth_str = auth_str + "\u0000";
     auth_str = auth_str + connection.authcid;
@@ -2439,9 +2439,9 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     return connection.authcid != null;
   }
 
-  String onChallenge(StropheConnection connection,
-      [String challenge, String test_cnonce]) {
-    if (first) return this._onChallenge(connection, challenge);
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, String test_cnonce]) async {
+    if (first) return await this._onChallenge(connection, challenge);
     Random random = new Random();
     String cnonce = test_cnonce ??
         MD5.hexdigest((random.nextDouble() * 1234567890).toString());
@@ -2457,7 +2457,8 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     return auth_str;
   }
 
-  String _onChallenge(StropheConnection connection, String challenge) {
+  Future<String> _onChallenge(
+      StropheConnection connection, String challenge) async {
     String nonce, salt, iter;
     int i, k;
     List Hi, U, U_old;
@@ -2497,30 +2498,29 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     salt = new String.fromCharCodes(base64.decode(salt));
     salt += "\x00\x00\x00\x01";
     pass = Utils.utf16to8(connection.pass);
-    Hi = SHA1.core_hmac_sha1(pass, salt);
+    Hi = await SHA1.core_hmac_sha1(pass, salt);
     U_old = Hi;
     for (i = 1; i < iter.length; i++) {
-      U = SHA1.core_hmac_sha1(pass, SHA1.binb2str(U_old));
+      U = await SHA1.core_hmac_sha1(pass, await SHA1.binb2str(U_old));
       for (k = 0; k < 5; k++) {
         Hi[k] ^= U[k];
       }
       U_old = U;
     }
-    String HiStr = SHA1.binb2str(Hi);
+    String HiStr = await SHA1.binb2str(Hi);
 
-    clientKey = SHA1.core_hmac_sha1(HiStr, "Client Key");
-    serverKey = SHA1.str_hmac_sha1(HiStr, "Server Key");
-    clientSignature = SHA1.core_hmac_sha1(
-        SHA1.str_sha1(SHA1.binb2str(clientKey)), authMessage);
+    clientKey = await SHA1.core_hmac_sha1(HiStr, "Client Key");
+    serverKey = await SHA1.str_hmac_sha1(HiStr, "Server Key");
+    clientSignature = await SHA1.core_hmac_sha1(
+        await SHA1.str_sha1(await SHA1.binb2str(clientKey)), authMessage);
     connection._sasl_data["server-signature"] =
-        SHA1.b64_hmac_sha1(serverKey, authMessage);
+        await SHA1.b64_hmac_sha1(serverKey, authMessage);
 
     for (k = 0; k < 5; k++) {
       clientKey[k] ^= clientSignature[k];
     }
-
-    responseText +=
-        ",p=" + base64.encode(SHA1.binb2str(clientKey).runes.toList());
+    String binb2str = await SHA1.binb2str(clientKey);
+    responseText += ",p=" + base64.encode(binb2str.runes.toList());
     return responseText;
   }
 }
@@ -2543,8 +2543,8 @@ class StropheSASLMD5 extends StropheSASLMechanism {
         '"';
   }
 
-  String onChallenge(StropheConnection connection,
-      [String challenge, String test_cnonce]) {
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, String test_cnonce]) async {
     if (first) return "";
     if (challenge == null) challenge = '';
     if (test_cnonce == null) test_cnonce = '';
@@ -2552,7 +2552,7 @@ class StropheSASLMD5 extends StropheSASLMechanism {
     String cnonce = test_cnonce ??
         MD5.hexdigest(new Random().nextInt(1234567890).toString());
     var realm = "";
-    var host = null;
+    var host;
     String nonce = "";
     String qop = "";
     List<Match> matches;
@@ -2589,7 +2589,7 @@ class StropheSASLMD5 extends StropheSASLMechanism {
 
     var cred = Utils.utf16to8(
         connection.authcid + ":" + realm + ":" + this._connection.pass);
-    String A1 = MD5.hash(cred) + ":" + nonce + ":" + cnonce;
+    String A1 = await MD5.hash(cred) + ":" + nonce + ":" + cnonce;
     String A2 = 'AUTHENTICATE:' + digest_uri;
 
     String responseText = "";
@@ -2602,13 +2602,13 @@ class StropheSASLMD5 extends StropheSASLMechanism {
     responseText += 'cnonce=' + this._quote(cnonce) + ',';
     responseText += 'digest-uri=' + this._quote(digest_uri) + ',';
     responseText += 'response=' +
-        MD5.hexdigest(MD5.hexdigest(A1) +
+        await MD5.hexdigest(await MD5.hexdigest(A1) +
             ":" +
             nonce +
             ":00000001:" +
             cnonce +
             ":auth:" +
-            MD5.hexdigest(A2)) +
+            await MD5.hexdigest(A2)) +
         ",";
     responseText += 'qop=auth';
     first = true;
@@ -2625,8 +2625,8 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
     return connection.pass != null;
   }
 
-  String onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) {
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, dynamic Stringtest_cnonce]) async {
     String auth_str = 'n,';
     if (connection.authcid != null) {
       auth_str = auth_str + 'a=' + connection.authzid;
@@ -2652,8 +2652,8 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 class StropheSASLExternal extends StropheSASLMechanism {
   StropheSASLExternal() : super("EXTERNAL", true, 10);
-  String onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) {
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, dynamic Stringtest_cnonce]) async {
     /** According to XEP-178, an authzid SHOULD NOT be presented when the
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authcid contained or implied in the client certificate is the JID (i.e.
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authzid) with which the user wants to log in as.
@@ -2674,8 +2674,8 @@ class StropheSASLXOAuth2 extends StropheSASLMechanism {
     return connection.pass != null;
   }
 
-  String onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) {
+  Future<String> onChallenge(StropheConnection connection,
+      [String challenge, dynamic Stringtest_cnonce]) async {
     String auth_str = '\u0000';
     if (connection.authcid != null) {
       auth_str = auth_str + connection.authzid;

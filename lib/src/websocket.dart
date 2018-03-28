@@ -12,7 +12,15 @@ class StropheWebSocket extends ServiceType {
 
   WebSocket socket;
 
-  StreamSubscription socketListen;
+  StreamSubscription _socketListen;
+
+  StreamSubscription get socketListen {
+    return _socketListen;
+  }
+
+  set socketListen(StreamSubscription socketListen) {
+    if (_socketListen != null) _socketListen = socketListen;
+  }
 
   StropheWebSocket(StropheConnection connection) {
     this._conn = connection;
@@ -321,6 +329,7 @@ class StropheWebSocket extends ServiceType {
     if (this.socket != null) {
       try {
         this.socket.handleError(() {});
+        this.socketListen.cancel();
         this.socket.close();
       } catch (e) {}
     }
@@ -450,7 +459,8 @@ class StropheWebSocket extends ServiceType {
      * Parameters:
      * (string) message - The websocket message.
      */
-  _onMessage(String message) {
+  void _onMessage(dynamic message) {
+    message = message as String;
     xml.XmlDocument elem;
     String data;
     // check for closing stream

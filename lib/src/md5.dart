@@ -1,19 +1,27 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+
 class MD5 {
-  static const mask32 = 0xFFFFFFFF;
-  static int safe_add(int x, int y) {
-    var lsw = (0xFFFF & x) + (0xFFFF & y);
+  static MethodChannel _methodChannel =
+      new MethodChannel("flutter.channel/sasl");
+  //static const mask32 = 0xFFFFFFFF;
+  static Future<int> safe_add(int x, int y) async {
+    /* var lsw = (0xFFFF & x) + (0xFFFF & y);
     var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-    return (msw << 16) | (lsw & 0xFFFF);
+    return (msw << 16) | (lsw & 0xFFFF); */
+    return await _methodChannel.invokeMethod("md5_safe_add", [x, y]);
   }
 
-  static int bit_rol(int nber, int cnt) {
+  static Future<int> bit_rol(int nber, int cnt) async {
     // Dans strophe.js (nber << cnt) | (nber >>> (32 - cnt))
     // l'operateur >>> n'existe pas dans dart
-    return (nber << cnt) | _zeroFillRightShift(nber, (32 - cnt));
+    //return (nber << cnt) | _zeroFillRightShift(nber, (32 - cnt));
+    return await _methodChannel.invokeMethod("bit_rol", [nber, cnt]);
   }
 
-  static List str2binl(String str) {
-    List bin = [];
+  static Future<List<int>> str2binl(String str) async {
+    /* List bin = [];
     for (int i = 0; i < str.length * 8; i += 8) {
       if (bin.length <= (i >> 5)) {
         var length = bin.length;
@@ -22,24 +30,26 @@ class MD5 {
       }
       bin[i >> 5] |= (str.codeUnitAt((i / 8).round()) & 255) << (i % 32);
     }
-    return bin;
+    return bin; */
+    return await _methodChannel.invokeMethod("str2binl", [str]);
   }
 
   /*
      * Convert an array of little-endian words to a string
      */
-  static String binl2str(List bin) {
-    String str = "";
+  static Future<String> binl2str(List<int> bin) async {
+    /* String str = "";
     for (int i = 0; i < bin.length * 32; i += 8) {
       //str += new String.fromCharCode((bin[i >> 5] >>> (i % 32)) & 255);
       str += new String.fromCharCode(
           _zeroFillRightShift(bin[i >> 5], (i % 32)) & 255);
     }
-    return str;
+    return str; */
+    return await _methodChannel.invokeMethod("binl2str", [bin]);
   }
 
-  static String binl2hex(List binarray) {
-    const String hex_tab = "0123456789abcdef";
+  static Future<String> binl2hex(List binarray) async {
+    /*  const String hex_tab = "0123456789abcdef";
     String str = "";
     for (int i = 0; i < binarray.length * 4; i++) {
       str += hex_tab
@@ -48,37 +58,49 @@ class MD5 {
           hex_tab
         ..split('').elementAt((binarray[i >> 2] >> ((i % 4) * 8)) & 0xF);
     }
-    return str;
+    return str; */
+    return await _methodChannel.invokeMethod("binl2hex", [binarray]);
   }
 
-  static int _zeroFillRightShift(int n, int amount) {
+  /*  static int _zeroFillRightShift(int n, int amount) {
     //return (n & 0xffffffff) >> amount;
-    return ((n & mask32) >> (32 - (amount & 31)));
+    // return ((n & mask32) >> (32 - (amount & 31)));
+    return 0;
+  } */
+
+  static Future<int> md5_cmn(int q, int a, int b, int x, int s, int t) async {
+    /* return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s), b); */
+    return await _methodChannel.invokeMethod("md5_cmn", [q, a, b, x, s, t]);
   }
 
-  static int md5_cmn(int q, int a, int b, int x, int s, int t) {
-    return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s), b);
+  static Future<int> md5_ff(
+      int a, int b, int c, int d, int x, int s, int t) async {
+    //return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t);
+    return await _methodChannel.invokeMethod("md5_ff", [a, b, c, d, x, s, t]);
   }
 
-  static int md5_ff(int a, int b, int c, int d, int x, int s, int t) {
-    return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t);
+  static Future<int> md5_gg(
+      int a, int b, int c, int d, int x, int s, int t) async {
+    //return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t);
+    return await _methodChannel.invokeMethod("md5_gg", [a, b, c, d, x, s, t]);
   }
 
-  static int md5_gg(int a, int b, int c, int d, int x, int s, int t) {
-    return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t);
+  static Future<int> md5_hh(
+      int a, int b, int c, int d, int x, int s, int t) async {
+    //return md5_cmn(b ^ c ^ d, a, b, x, s, t);
+    return await _methodChannel.invokeMethod("md5_hh", [a, b, c, d, x, s, t]);
   }
 
-  static int md5_hh(int a, int b, int c, int d, int x, int s, int t) {
-    return md5_cmn(b ^ c ^ d, a, b, x, s, t);
+  static Future<int> md5_ii(
+      int a, int b, int c, int d, int x, int s, int t) async {
+    //return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
+    return await _methodChannel.invokeMethod("md5_ii", [a, b, c, d, x, s, t]);
   }
 
-  static int md5_ii(int a, int b, int c, int d, int x, int s, int t) {
-    return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
-  }
-
-  static List core_md5(List x, int len) {
+  static Future<List<int>> core_md5(List<int> x, int len) async {
+    return await _methodChannel.invokeMethod("core_md5", [x, len]);
     /* append padding */
-    x[len >> 5] |= 0x80 << ((len) % 32);
+    /*  x[len >> 5] |= 0x80 << ((len) % 32);
     int length = x.length;
     //x.length = (((len + 64) >>> 9) << 4) + 14;
     x.length = (_zeroFillRightShift((len + 64), 9) << 4) + 14;
@@ -175,14 +197,16 @@ class MD5 {
       c = safe_add(c, oldc);
       d = safe_add(d, oldd);
     }
-    return [a, b, c, d];
+    return [a, b, c, d]; */
   }
 
-  static String hexdigest(String s) {
-    return binl2hex(core_md5(str2binl(s), s.length * 8));
+  static Future<String> hexdigest(String s) async {
+    //return binl2hex(core_md5(str2binl(s), s.length * 8));
+    return await _methodChannel.invokeMethod("hexdigest", [s]);
   }
 
-  static String hash(String s) {
-    return binl2str(core_md5(str2binl(s), s.length * 8));
+  static Future<String> hash(String s) async {
+    //return binl2str(core_md5(str2binl(s), s.length * 8));
+    return await _methodChannel.invokeMethod("hash", [s]);
   }
 }
