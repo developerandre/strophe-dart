@@ -1,6 +1,6 @@
 Strophe is a Dart library for speaking XMPP via BOSH (XEP 124 and XEP 206) and WebSockets (RFC 7395).
 
-Its primary purpose is to enable web-based, real-time XMPP applications that run in any dart,flutter and web.
+Its primary purpose is to enable web-based, real-time XMPP applications that run in any dart,flutter and web application.
 
 
 License
