@@ -8,7 +8,7 @@ public class SHA1 {
     /*
 * Calculate the SHA-1 of an array of big-endian words, and a bit length
 */
-   static int[] core_sha1(int[] x, int len) {
+    static int[] core_sha1(int[] x, int len) {
 
   /* append padding */
         int[] temp = x;
@@ -107,8 +107,8 @@ public class SHA1 {
         int[] opad = new int[16];
         int bCle;
         for (int i = 0; i < 16; i++) {
-            if(bkey.length <= i) bCle = 0;
-            else  bCle = bkey[i];
+            if (bkey.length <= i) bCle = 0;
+            else bCle = bkey[i];
             ipad[i] = bCle ^ 0x36363636;
             opad[i] = bCle ^ 0x5C5C5C5C;
         }
@@ -182,23 +182,28 @@ public class SHA1 {
      * Convert an array of big-endian words to a base-64 string
      */
     static String binb2b64(int[] binarray) {
-        String tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        String[] tab = new String[]{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"};
         String str = "";
         int triplet;
+        int bin, bin2, bin3;
         for (int i = 0; i < binarray.length * 4; i += 3) {
-            triplet = (((binarray[i >> 2] >> 8 * (3 - i % 4)) & 0xFF) << 16) |
-                    (((binarray[i + 1 >> 2] >> 8 * (3 - (i + 1) % 4)) & 0xFF) << 8) |
-                    ((binarray[i + 2 >> 2] >> 8 * (3 - (i + 2) % 4)) & 0xFF);
+            bin = (i >> 2) < binarray.length ? binarray[i >> 2] : 0;
+            bin2 = (i + 1 >> 2) < binarray.length ? binarray[i + 1 >> 2] : 0;
+            bin3 = (i + 2 >> 2) < binarray.length ? binarray[i + 2 >> 2] : 0;
+            triplet = (((bin >> 8 * (3 - i % 4)) & 0xFF) << 16) |
+                    (((bin2 >> 8 * (3 - (i + 1) % 4)) & 0xFF) << 8) |
+                    ((bin3 >> 8 * (3 - (i + 2) % 4)) & 0xFF);
             for (int j = 0; j < 4; j++) {
                 if (i * 8 + j * 6 > binarray.length * 32) {
                     str += "=";
                 } else {
-                    str += tab.charAt((triplet >> 6 * (3 - j)) & 0x3F);
+                    str += tab[(triplet >> 6 * (3 - j)) & 0x3F];
                 }
             }
         }
         return str;
     }
+
     static String b64_hmac_sha1(String key, String data) {
         return binb2b64(core_hmac_sha1(key, data));
     }
@@ -213,5 +218,13 @@ public class SHA1 {
 
     static String str_sha1(String s) {
         return binb2str(core_sha1(str2binb(s), s.length() * 8));
+    }
+
+    static int[] forEachBinaryXor(int[] tab1, int[] tab2, int length) {
+        for (int k = 0; k < length; k++) {
+            if (k < length)
+                tab1[k] ^= tab2[k];
+        }
+        return tab1;
     }
 }

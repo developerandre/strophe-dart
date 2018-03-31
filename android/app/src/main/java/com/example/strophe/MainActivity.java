@@ -150,7 +150,7 @@ public class MainActivity extends FlutterActivity {
                                 result.error("Argument Size Error", "size array error", null);
                                 return;
                             }
-                            if (!(arguments.get(0) instanceof String)) {
+                            if (!(arguments.get(0) instanceof int[])) {
                                 result.error("Argument Error", "first argument must be array of integer", null);
                                 return;
                             }
@@ -161,7 +161,7 @@ public class MainActivity extends FlutterActivity {
                                 result.error("Argument Size Error", "size array error", null);
                                 return;
                             }
-                            if (!(arguments.get(0) instanceof String)) {
+                            if (!(arguments.get(0) instanceof int[])) {
                                 result.error("Argument Error", "first argument must be array of integer", null);
                                 return;
                             }
@@ -219,7 +219,7 @@ public class MainActivity extends FlutterActivity {
                                 result.error("Argument Size Error", "size array error", null);
                                 return;
                             }
-                            if (!(arguments.get(0) instanceof String)) {
+                            if (!(arguments.get(0) instanceof int[])) {
                                 result.error("Argument Error", "first argument must be array of integer", null);
                                 return;
                             }
@@ -230,7 +230,7 @@ public class MainActivity extends FlutterActivity {
                                 result.error("Argument Size Error", "size array error", null);
                                 return;
                             }
-                            if (!(arguments.get(0) instanceof String)) {
+                            if (!(arguments.get(0) instanceof int[])) {
                                 result.error("Argument Error", "first argument must be array of integer", null);
                                 return;
                             }
@@ -310,6 +310,27 @@ public class MainActivity extends FlutterActivity {
                                 return;
                             }
                             result.success(MD5.hash((String) arguments.get(0)));
+                        }
+                        // utility
+                        else if (methodCall.method.equals("forEachBinaryXor")) {
+                            ArrayList arguments = (ArrayList) methodCall.arguments;
+                            if(arguments.size() < 3){
+                                result.error("Argument Size Error", "size array error", null);
+                                return;
+                            }
+                            if (!(arguments.get(0) instanceof int[])) {
+                                result.error("Argument Error", "first argument must be String", null);
+                                return;
+                            }
+                            if (!(arguments.get(1) instanceof int[])) {
+                                result.error("Argument Error", "first argument must be String", null);
+                                return;
+                            }
+                            if (!(arguments.get(2) instanceof Integer)) {
+                                result.error("Argument Error", "first argument must be String", null);
+                                return;
+                            }
+                            result.success(SHA1.forEachBinaryXor((int[]) arguments.get(0),(int[]) arguments.get(1),(int) arguments.get(2)));
                         }
                         else {
                             result.notImplemented();

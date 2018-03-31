@@ -61,7 +61,7 @@ class StropheBosh extends ServiceType {
      *  This will enable stripping of the body tag in both
      *  <Strophe.Connection.xmlInput> and <Strophe.Connection.xmlOutput>.
      */
-  String strip = null;
+  String strip;
 
   /** PrivateFunction: _buildBody
      *  _Private_ helper function to generate the <body/> wrapper for BOSH.
@@ -133,7 +133,7 @@ class StropheBosh extends ServiceType {
     }
     StropheRequest req =
         new StropheRequest(body.tree(), null, body.tree().getAttribute("rid"));
-    req.func = this._onRequestStateChange(this._conn.connect_cb, req);
+    req.func = this._onRequestStateChange(this._conn.connectCb, req);
     req.origFunc = req.func;
 
     this._requests.add(req);
@@ -175,7 +175,7 @@ class StropheBosh extends ServiceType {
     this.sid = sid;
     this.rid = rid;
 
-    this._conn.connect_callback = callback;
+    this._conn.connectCallback = callback;
 
     this._conn.domain = Strophe.getDomainFromJid(this._conn.jid);
 

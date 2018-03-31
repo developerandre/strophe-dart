@@ -18,8 +18,8 @@ class StropheWebSocket extends ServiceType {
     return _socketListen;
   }
 
-  set socketListen(StreamSubscription socketListen) {
-    if (_socketListen != null) _socketListen = socketListen;
+  set socketListen(StreamSubscription listen) {
+    if (listen != null) _socketListen = listen;
   }
 
   StropheWebSocket(StropheConnection connection) {
@@ -72,7 +72,7 @@ class StropheWebSocket extends ServiceType {
      *  Returns:
      *     true if there was a streamerror, false otherwise.
      */
-  bool _check_streamerror(xml.XmlNode bodyWrapNode, int connectstatus) {
+  bool _checkStreamError(xml.XmlNode bodyWrapNode, int connectstatus) {
     Iterable<xml.XmlElement> errors;
     xml.XmlElement bodyWrap;
     if (bodyWrapNode is xml.XmlDocument)
@@ -156,7 +156,7 @@ class StropheWebSocket extends ServiceType {
       WebSocket.connect(this._conn.service, protocols: ['xmpp']).then(
           (WebSocket socket) {
         this.socket = socket;
-        this.socketListen = this.socket.listen(this._connect_cb_wrapper,
+        this.socketListen = this.socket.listen(this._connectCbWrapper,
             onError: this._onError, onDone: this._onClose);
         this._onOpen();
       });
@@ -171,12 +171,12 @@ class StropheWebSocket extends ServiceType {
      *  Parameters:
      *    (Strophe.Request) bodyWrap - The received stanza.
      */
-  connect_cb(bodyWrap) {
-    this._connect_cb(bodyWrap);
+  connectCb(bodyWrap) {
+    this._connectCb(bodyWrap);
   }
 
-  _connect_cb(bodyWrap) {
-    var error = this._check_streamerror(bodyWrap, Strophe.Status['CONNFAIL']);
+  _connectCb(bodyWrap) {
+    var error = this._checkStreamError(bodyWrap, Strophe.Status['CONNFAIL']);
     if (error) {
       return Strophe.Status['CONNFAIL'];
     }
@@ -223,7 +223,7 @@ class StropheWebSocket extends ServiceType {
      * On receiving an opening stream tag this callback replaces itself with the real
      * message handler. On receiving a stream error the connection is terminated.
      */
-  void _connect_cb_wrapper(message) {
+  void _connectCbWrapper(message) {
     try {
       message = message as String;
     } catch (e) {
@@ -243,19 +243,19 @@ class StropheWebSocket extends ServiceType {
       //_handleStreamSteart will check for XML errors and disconnect on error
       if (this._handleStreamStart(streamStart)) {
         //_connect_cb will check for stream:error and disconnect on error
-        this._connect_cb(streamStart);
+        this.connectCb(streamStart.rootElement);
       }
     } else if (message.trim().indexOf("<close ") == 0) {
       // <close xmlns="urn:ietf:params:xml:ns:xmpp-framing />
       this._conn.rawInput(message);
       this._conn.xmlInput(xml.parse(message).rootElement);
-      String see_uri =
+      String seeUri =
           xml.parse(message).rootElement.getAttribute("see-other-uri");
-      if (see_uri != null && see_uri.isNotEmpty) {
+      if (seeUri != null && seeUri.isNotEmpty) {
         this._conn.changeConnectStatus(Strophe.Status['REDIRECT'],
             "Received see-other-uri, resetting connection");
         this._conn.reset();
-        this._conn.service = see_uri;
+        this._conn.service = seeUri;
         this._connect();
       } else {
         this._conn.changeConnectStatus(
@@ -266,7 +266,7 @@ class StropheWebSocket extends ServiceType {
       String string = this._streamWrap(message);
       xml.XmlDocument elem = xml.parse(string);
       this.socketListen.onData(this._onMessage);
-      this._conn.connect_cb(elem, null, message);
+      this._conn.connectCb(elem, null, message);
     }
   }
 
@@ -483,7 +483,7 @@ class StropheWebSocket extends ServiceType {
       elem = xml.parse(data);
     }
 
-    if (this._check_streamerror(elem, Strophe.Status['ERROR'])) {
+    if (this._checkStreamError(elem, Strophe.Status['ERROR'])) {
       return;
     }
 
@@ -527,7 +527,7 @@ class StropheWebSocket extends ServiceType {
      *  Returns:
      *    The stanza that was passed.
      */
-  reqToData(stanza) {
+  xml.XmlElement reqToData(stanza) {
     return this._reqToData(stanza);
   }
 

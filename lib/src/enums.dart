@@ -177,7 +177,13 @@ class StanzaBuilder {
      */
   StanzaBuilder c(String name, [Map<String, String> attrs, dynamic text]) {
     xml.XmlNode child = Strophe.xmlElement(name, attrs: attrs, text: text);
-    this.node.children.add(child);
+    xml.XmlElement xmlElement = child is xml.XmlDocument
+        ? child.rootElement
+        : (child as xml.XmlElement);
+    if (this.node.children.length == 1)
+      this.node.firstChild.children.add(Strophe.copyElement(xmlElement));
+    else
+      this.node.children.add(Strophe.copyElement(xmlElement));
     if (!(text is String) && !(text is num)) {
       this.node = child;
     }
@@ -331,11 +337,11 @@ class StanzaHandler {
     if (this.options['matchBareFromJid']) {
       from = Strophe.getBareJidFromJid(from);
     }
-    String elem_type = elem.getAttribute("type");
+    String elemType = elem.getAttribute("type");
     String id = elem.getAttribute("id");
     if (this.namespaceMatch(elem) &&
         (this.name == null || Strophe.isTagEqual(elem, this.name)) &&
-        (this.type == null || elem_type == this.type) &&
+        (this.type == null || elemType == this.type) &&
         (this.id == null || id == this.id) &&
         (this.from == null || from == this.from)) {
       return true;
@@ -353,10 +359,10 @@ class StanzaHandler {
      *  Returns:
      *    A boolean indicating if the handler should remain active.
      */
-  bool run(xml.XmlNode elem) {
-    bool result;
+  Future<bool> run(xml.XmlNode elem) async {
+    bool result = false;
     try {
-      result = this.handler(elem);
+      result = await this.handler(elem) ?? false;
     } catch (e) {
       Strophe.handleError(e);
       throw e;
@@ -444,11 +450,11 @@ class StropheConnection {
 
   String features;
 
-  Map<String, dynamic> _sasl_data;
+  Map<String, dynamic> _saslData;
 
-  bool do_session;
+  bool doSession;
 
-  bool do_bind;
+  bool doBind;
 
   List<StanzaTimedHandler> timedHandlers;
 
@@ -474,7 +480,7 @@ class StropheConnection {
 
   bool disconnecting;
 
-  bool do_authentication;
+  bool doAuthentication;
 
   bool paused;
 
@@ -484,11 +490,11 @@ class StropheConnection {
 
   int _uniqueId;
 
-  StanzaHandler _sasl_success_handler;
+  StanzaHandler _saslSuccessHandler;
 
-  StanzaHandler _sasl_failure_handler;
+  StanzaHandler _saslFailureHandler;
 
-  StanzaHandler _sasl_challenge_handler;
+  StanzaHandler _saslChallengeHandler;
 
   int maxRetries;
 
@@ -496,9 +502,9 @@ class StropheConnection {
 
   List<StropheRequest> _requests;
 
-  ConnectCallBack connect_callback;
+  ConnectCallBack connectCallback;
 
-  StropheSASLMechanism _sasl_mechanism;
+  StropheSASLMechanism _saslMechanism;
 
   // The service URL
   int get uniqueId {
@@ -531,9 +537,9 @@ class StropheConnection {
     this.features = null;
 
     // SASL
-    this._sasl_data = {};
-    this.do_session = false;
-    this.do_bind = false;
+    this._saslData = {};
+    this.doSession = false;
+    this.doBind = false;
 
     // handler lists
     this.timedHandlers = [];
@@ -549,16 +555,16 @@ class StropheConnection {
     this.authenticated = false;
     this.connected = false;
     this.disconnecting = false;
-    this.do_authentication = true;
+    this.doAuthentication = true;
     this.paused = false;
     this.restored = false;
 
     this._data = [];
     this._uniqueId = 0;
 
-    this._sasl_success_handler = null;
-    this._sasl_failure_handler = null;
-    this._sasl_challenge_handler = null;
+    this._saslSuccessHandler = null;
+    this._saslFailureHandler = null;
+    this._saslChallengeHandler = null;
 
     // Max retries before disconnecting
     this.maxRetries = 5;
@@ -602,8 +608,8 @@ class StropheConnection {
     this._proto.reset();
 
     // SASL
-    this.do_session = false;
-    this.do_bind = false;
+    this.doSession = false;
+    this.doBind = false;
 
     // handler lists
     this.timedHandlers = [];
@@ -703,8 +709,8 @@ class StropheConnection {
      *  // Triggers HTTP 500 error and onError handler will be called
      *  conn.connect('user_jid@incorrect_jabber_host', 'secret', onConnect);
      */
-  addProtocolErrorHandler(String protocol, int status_code, Function callback) {
-    this.protocolErrorHandlers[protocol][status_code] = callback;
+  addProtocolErrorHandler(String protocol, int statusCode, Function callback) {
+    this.protocolErrorHandlers[protocol][statusCode] = callback;
   }
 
   /** Function: connect
@@ -772,7 +778,7 @@ class StropheConnection {
 
     this.servtype = "xmpp";
 
-    this.connect_callback = callback;
+    this.connectCallback = callback;
     this.disconnecting = false;
     this.connected = false;
     this.authenticated = false;
@@ -1445,10 +1451,10 @@ class StropheConnection {
       }
     });
     // notify the user's callback
-    if (this.connect_callback != null) {
+    if (this.connectCallback != null) {
       try {
-        if (connect_callback != null)
-          this.connect_callback(status, condition, elem);
+        if (connectCallback != null)
+          this.connectCallback(status, condition, elem);
       } catch (e) {
         Strophe.handleError(e);
         Strophe
@@ -1585,7 +1591,7 @@ class StropheConnection {
     }
 
     // send each incoming stanza through the handler chain
-    Strophe.forEachChild(elem, null, (child) {
+    Strophe.forEachChild(elem, null, (child) async {
       List<StanzaHandler> newList;
       // process handlers
       newList = this.handlers;
@@ -1596,7 +1602,7 @@ class StropheConnection {
         // one of the handlers throws an exception
         try {
           if (hand.isMatch(child) && (this.authenticated || !hand.user)) {
-            if (hand.run(child)) {
+            if (await hand.run(child)) {
               this.handlers.add(hand);
             }
           } else {
@@ -1604,8 +1610,8 @@ class StropheConnection {
           }
         } catch (e) {
           // if the handler throws an exception, we consider it as false
-          Strophe.warn('Removing Strophe handlers due to uncaught exception: ' +
-              e.message);
+          /* Strophe.warn('Removing Strophe handlers due to uncaught exception: ' +
+              e.message); */
         }
       }
     });
@@ -1623,9 +1629,9 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                                                                                                          * Sends a blank poll request.
                                                                                                                                                                                                                                                                                                                                                                                                          */
-  _no_auth_received([Function _callback]) {
-    var error_msg = "Server did not offer a supported authentication mechanism";
-    Strophe.error(error_msg);
+  _noAuthReceived([Function _callback]) {
+    var errorMsg = "Server did not offer a supported authentication mechanism";
+    Strophe.error(errorMsg);
     this._changeConnectStatus(
         Strophe.Status['CONNFAIL'], Strophe.ErrorCondition['NO_AUTH_MECH']);
     if (_callback != null) {
@@ -1650,11 +1656,11 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                          *      Useful for plugins with their own xmpp connect callback (when they
                                                                                                                                                                                                                                                                                                                                                                                                          *      want to do something special).
                                                                                                                                                                                                                                                                                                                                                                                                          */
-  connect_cb(req, Function _callback, String raw) {
-    this._connect_cb(req, _callback, raw);
+  connectCb(req, Function _callback, String raw) {
+    this._connectCb(req, _callback, raw);
   }
 
-  _connect_cb(req, Function _callback, String raw) {
+  _connectCb(req, Function _callback, String raw) {
     Strophe.info("_connect_cb was called");
     this.connected = true;
 
@@ -1689,7 +1695,7 @@ class StropheConnection {
     }
     //}
 
-    int conncheck = this._proto.connect_cb(bodyWrap);
+    int conncheck = this._proto.connectCb(bodyWrap);
     if (conncheck == Strophe.Status['CONNFAIL']) {
       return;
     }
@@ -1704,7 +1710,7 @@ class StropheConnection {
           bodyWrap.findAllElements("features").length > 0;
     }
     if (!hasFeatures) {
-      this._no_auth_received(_callback);
+      this._noAuthReceived(_callback);
       return;
     }
 
@@ -1722,11 +1728,11 @@ class StropheConnection {
       if (bodyWrap.findAllElements("auth").length == 0) {
         // There are no matching SASL mechanisms and also no legacy
         // auth available.
-        this._no_auth_received(_callback);
+        this._noAuthReceived(_callback);
         return;
       }
     }
-    if (this.do_authentication != false) {
+    if (this.doAuthentication != false) {
       this.authenticate(matched);
     }
   }
@@ -1777,34 +1783,32 @@ class StropheConnection {
   Future<bool> _attemptSASLAuth(List<StropheSASLMechanism> mechanisms) async {
     mechanisms = this.sortMechanismsByPriority(mechanisms ?? []);
 
-    bool mechanism_found = false;
+    bool mechanismFound = false;
     for (int i = 0; i < mechanisms.length; ++i) {
       if (!mechanisms[i].test(this)) {
         continue;
       }
-      this._sasl_success_handler = this
-          ._addSysHandler(this._sasl_success_cb, null, "success", null, null);
-      this._sasl_failure_handler = this
-          ._addSysHandler(this._sasl_failure_cb, null, "failure", null, null);
-      this._sasl_challenge_handler = this._addSysHandler(
-          this._sasl_challenge_cb, null, "challenge", null, null);
+      this._saslSuccessHandler =
+          this._addSysHandler(this._saslSuccessCb, null, "success", null, null);
+      this._saslFailureHandler =
+          this._addSysHandler(this._saslFailureCb, null, "failure", null, null);
+      this._saslChallengeHandler = this
+          ._addSysHandler(this._saslChallengeCb, null, "challenge", null, null);
 
-      this._sasl_mechanism = mechanisms[i];
-      this._sasl_mechanism.onStart(this);
+      this._saslMechanism = mechanisms[i];
+      this._saslMechanism.onStart(this);
 
-      StanzaBuilder request_auth_exchange = Strophe.$build("auth", {
-        'xmlns': Strophe.NS['SASL'],
-        'mechanism': this._sasl_mechanism.name
-      });
-      if (this._sasl_mechanism.isClientFirst) {
-        String response = await this._sasl_mechanism.onChallenge(this, null);
-        request_auth_exchange.t(base64.encode(response.runes.toList()));
+      StanzaBuilder requestAuthExchange = Strophe.$build("auth",
+          {'xmlns': Strophe.NS['SASL'], 'mechanism': this._saslMechanism.name});
+      if (this._saslMechanism.isClientFirst) {
+        String response = await this._saslMechanism.onChallenge(this, null);
+        requestAuthExchange.t(base64.encode(response.runes.toList()));
       }
-      this.send(request_auth_exchange.tree());
-      mechanism_found = true;
+      this.send(requestAuthExchange.tree());
+      mechanismFound = true;
       break;
     }
-    return mechanism_found;
+    return mechanismFound;
   }
 
   /** PrivateFunction: _attemptLegacyAuth
@@ -1822,7 +1826,7 @@ class StropheConnection {
     } else {
       // Fall back to legacy authentication
       this._changeConnectStatus(Strophe.Status['AUTHENTICATING'], null);
-      this._addSysHandler(this._auth1_cb, null, null, null, "_auth_1");
+      this._addSysHandler(this._auth1Cb, null, null, null, "_auth_1");
       this.send(Strophe
           .$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
           .c("query", {'xmlns': Strophe.NS['AUTH']})
@@ -1851,14 +1855,14 @@ class StropheConnection {
     }
   }
 
-  /** PrivateFunction: _sasl_challenge_cb
+  /** PrivateFunction: _saslChallengeCb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for the SASL challenge
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  _sasl_challenge_cb(elem) async {
+  Future<bool> _saslChallengeCb(elem) async {
     String challenge =
         new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
-    String response = await this._sasl_mechanism.onChallenge(this, challenge);
+    String response = await this._saslMechanism.onChallenge(this, challenge);
     StanzaBuilder stanza =
         Strophe.$build('response', {'xmlns': Strophe.NS['SASL']});
     if (response != "") {
@@ -1868,12 +1872,12 @@ class StropheConnection {
     return true;
   }
 
-  /** PrivateFunction: _auth1_cb
+  /** PrivateFunction: _auth1Cb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for legacy authentication.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  This handler is called in response to the initial <iq type='get'/>
                                                                                                                                                                                                                                                                                                                                                                                                              *  for legacy authentication.  It builds an authentication <iq/> and
-                                                                                                                                                                                                                                                                                                                                                                                                             *  sends it, creating a handler (calling back to _auth2_cb()) to
+                                                                                                                                                                                                                                                                                                                                                                                                             *  sends it, creating a handler (calling back to _auth2Cb()) to
                                                                                                                                                                                                                                                                                                                                                                                                              *  handle the result
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  Parameters:
@@ -1883,7 +1887,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
   /* jshint unused:false */
-  _auth1_cb(elem) {
+  _auth1Cb(elem) {
     // build plaintext auth iq
     StanzaBuilder iq = Strophe
         .$iq({'type': "set", 'id': "_auth_2"})
@@ -1903,13 +1907,13 @@ class StropheConnection {
     }
     iq.up().c('resource', {}).t(Strophe.getResourceFromJid(this.jid));
 
-    this._addSysHandler(this._auth2_cb, null, null, null, "_auth_2");
+    this._addSysHandler(this._auth2Cb, null, null, null, "_auth_2");
     this.send(iq.tree());
     return false;
   }
   /* jshint unused:true */
 
-  /** PrivateFunction: _sasl_success_cb
+  /** PrivateFunction: _saslSuccessCb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for succesful SASL authentication.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  Parameters:
@@ -1918,57 +1922,50 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  Returns:
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  _sasl_success_cb(elem) {
-    if (this._sasl_data["server-signature"]) {
+  bool _saslSuccessCb(elem) {
+    String saslData = this._saslData["server-signature"];
+    if (saslData != null && saslData.isNotEmpty) {
       String serverSignature;
       String success =
           new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
       RegExp attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
-      List<Match> matches = attribMatch.allMatches(success);
-      if (matches[1].group(0) == "v") {
-        serverSignature = matches[2].group(0);
+      Match matches = attribMatch.firstMatch(success);
+      if (matches.group(1) == "v") {
+        serverSignature = matches.group(2);
       }
-
-      if (serverSignature != this._sasl_data["server-signature"]) {
+      if (serverSignature != saslData) {
         // remove old handlers
-        this.deleteHandler(this._sasl_failure_handler);
-        this._sasl_failure_handler = null;
-        if (this._sasl_challenge_handler != null) {
-          this.deleteHandler(this._sasl_challenge_handler);
-          this._sasl_challenge_handler = null;
+        this.deleteHandler(this._saslFailureHandler);
+        this._saslFailureHandler = null;
+        if (this._saslChallengeHandler != null) {
+          this.deleteHandler(this._saslChallengeHandler);
+          this._saslChallengeHandler = null;
         }
 
-        this._sasl_data = {};
-        return this._sasl_failure_cb(null);
+        this._saslData = {};
+        return this._saslFailureCb(null);
       }
     }
     Strophe.info("SASL authentication succeeded.");
 
-    if (this._sasl_mechanism != null) {
-      this._sasl_mechanism.onSuccess();
+    if (this._saslMechanism != null) {
+      this._saslMechanism.onSuccess();
     }
 
     // remove old handlers
-    this.deleteHandler(this._sasl_failure_handler);
-    this._sasl_failure_handler = null;
-    if (this._sasl_challenge_handler != null) {
-      this.deleteHandler(this._sasl_challenge_handler);
-      this._sasl_challenge_handler = null;
+    this.deleteHandler(this._saslFailureHandler);
+    this._saslFailureHandler = null;
+    if (this._saslChallengeHandler != null) {
+      this.deleteHandler(this._saslChallengeHandler);
+      this._saslChallengeHandler = null;
     }
 
-    List<StanzaHandler> streamfeature_handlers = [];
-    Function wrapper = (handlers, elem) {
-      while (handlers.length) {
-        this.deleteHandler(handlers.removeLast());
-      }
-      this._sasl_auth1_cb(elem);
-      return false;
-    };
-    streamfeature_handlers.add(this._addSysHandler((elem) {
-      wrapper(streamfeature_handlers, elem);
+    List<StanzaHandler> streamFeatureHandlers = [];
+    streamFeatureHandlers.add(this._addSysHandler((elem) {
+      return this.wrapper(streamFeatureHandlers, elem);
     }, null, "stream:features", null, null));
-    streamfeature_handlers.add(this._addSysHandler((elem) {
-      wrapper(streamfeature_handlers, elem);
+    streamFeatureHandlers.add(this._addSysHandler((elem) {
+      return this.wrapper(streamFeatureHandlers, elem);
     }, Strophe.NS['STREAM'], "features", null, null));
 
     // we must send an xmpp:restart now
@@ -1977,7 +1974,15 @@ class StropheConnection {
     return false;
   }
 
-  /** PrivateFunction: _sasl_auth1_cb
+  bool wrapper(List<StanzaHandler> handlers, elem) {
+    while (handlers.length > 0) {
+      this.deleteHandler(handlers.removeLast());
+    }
+    this._saslAuth1Cb(elem);
+    return false;
+  }
+
+  /** PrivateFunction: _saslAuth1Cb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler to start stream binding.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  Parameters:
@@ -1986,27 +1991,28 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  Returns:
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  bool _sasl_auth1_cb(elem) {
+  bool _saslAuth1Cb(element) {
     // save stream:features for future usage
-    elem = elem is xml.XmlDocument ? elem.rootElement : elem as xml.XmlElement;
+    xml.XmlElement elem = element is xml.XmlDocument
+        ? element.rootElement
+        : (element as xml.XmlElement);
     this.features = elem.toString();
     xml.XmlElement child;
     for (int i = 0; i < elem.children.length; i++) {
       child = elem.children.elementAt(i) as xml.XmlElement;
       if (child.name.qualified == 'bind') {
-        this.do_bind = true;
+        this.doBind = true;
       }
 
       if (child.name.qualified == 'session') {
-        this.do_session = true;
+        this.doSession = true;
       }
     }
-
-    if (!this.do_bind) {
+    if (!this.doBind) {
       this._changeConnectStatus(Strophe.Status['AUTHFAIL'], null);
       return false;
     } else {
-      this._addSysHandler(this._sasl_bind_cb, null, null, null, "_bind_auth_2");
+      this._addSysHandler(this._saslBindCb, null, null, null, "_bind_auth_2");
 
       String resource = Strophe.getResourceFromJid(this.jid);
       if (resource != null && resource.isNotEmpty) {
@@ -2024,7 +2030,7 @@ class StropheConnection {
     return false;
   }
 
-  /** PrivateFunction: _sasl_bind_cb
+  /** PrivateFunction: _saslBindCb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for binding result and session start.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  Parameters:
@@ -2033,7 +2039,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  Returns:
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  _sasl_bind_cb(xml.XmlElement elem) {
+  bool _saslBindCb(xml.XmlElement elem) {
     if (elem.getAttribute("type") == "error") {
       Strophe.info("SASL binding failed.");
       List<xml.XmlElement> conflict = elem.findAllElements("conflict");
@@ -2045,18 +2051,17 @@ class StropheConnection {
       return false;
     }
 
-    List<xml.XmlElement> bind = elem.findAllElements("bind");
+    List<xml.XmlElement> bind = elem.findAllElements("bind").toList();
     List<xml.XmlElement> jidNode;
     if (bind.length > 0) {
       // Grab jid
-      jidNode = bind[0].findAllElements("jid");
+      jidNode = bind[0].findAllElements("jid").toList();
       if (jidNode.length > 0) {
         this.jid = Strophe.getText(jidNode[0]);
 
-        if (this.do_session) {
+        if (this.doSession) {
           this._addSysHandler(
-              this._sasl_session_cb, null, null, null, "_session_auth_2");
-
+              this._saslSessionCb, null, null, null, "_session_auth_2");
           this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"}).c(
               'session', {'xmlns': Strophe.NS['SESSION']}).tree());
         } else {
@@ -2064,6 +2069,7 @@ class StropheConnection {
           this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
         }
       }
+      return false;
     } else {
       Strophe.info("SASL binding failed.");
       this._changeConnectStatus(Strophe.Status['AUTHFAIL'], null, elem);
@@ -2071,7 +2077,7 @@ class StropheConnection {
     }
   }
 
-  /** PrivateFunction: _sasl_session_cb
+  /** PrivateFunction: _saslSessionCb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler to finish successful SASL connection.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  This sets Connection.authenticated to true on success, which
@@ -2083,7 +2089,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  Returns:
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  _sasl_session_cb(xml.XmlElement elem) {
+  bool _saslSessionCb(xml.XmlElement elem) {
     if (elem.getAttribute("type") == "result") {
       this.authenticated = true;
       this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
@@ -2095,7 +2101,7 @@ class StropheConnection {
     return false;
   }
 
-  /** PrivateFunction: _sasl_failure_cb
+  /** PrivateFunction: _saslFailureCb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for SASL authentication failure.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  Parameters:
@@ -2105,24 +2111,24 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
   /* jshint unused:false */
-  _sasl_failure_cb([xml.XmlElement elem]) {
+  _saslFailureCb([xml.XmlElement elem]) {
     // delete unneeded handlers
-    if (this._sasl_success_handler != null) {
-      this.deleteHandler(this._sasl_success_handler);
-      this._sasl_success_handler = null;
+    if (this._saslSuccessHandler != null) {
+      this.deleteHandler(this._saslSuccessHandler);
+      this._saslSuccessHandler = null;
     }
-    if (this._sasl_challenge_handler != null) {
-      this.deleteHandler(this._sasl_challenge_handler);
-      this._sasl_challenge_handler = null;
+    if (this._saslChallengeHandler != null) {
+      this.deleteHandler(this._saslChallengeHandler);
+      this._saslChallengeHandler = null;
     }
 
-    if (this._sasl_mechanism != null) this._sasl_mechanism.onFailure();
+    if (this._saslMechanism != null) this._saslMechanism.onFailure();
     this._changeConnectStatus(Strophe.Status['AUTHFAIL'], null, elem);
     return false;
   }
   /* jshint unused:true */
 
-  /** PrivateFunction: _auth2_cb
+  /** PrivateFunction: _auth2Cb
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler to finish legacy authentication.
                                                                                                                                                                                                                                                                                                                                                                                                              *
                                                                                                                                                                                                                                                                                                                                                                                                              *  This handler is called when the result from the jabber:iq:auth
@@ -2134,7 +2140,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  Returns:
                                                                                                                                                                                                                                                                                                                                                                                                              *    false to remove the handler.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  bool _auth2_cb(xml.XmlElement elem) {
+  bool _auth2Cb(xml.XmlElement elem) {
     if (elem.getAttribute("type") == "result") {
       this.authenticated = true;
       this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
@@ -2366,7 +2372,7 @@ class StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                    */
   /* jshint unused:false */
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, String test_cnonce]) {
+      [String challenge, String testCnonce]) {
     throw {'message': "You should implement challenge handling!"};
   }
   /* jshint unused:true */
@@ -2419,13 +2425,13 @@ class StropheSASLPlain extends StropheSASLMechanism {
   }
 
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) async {
-    var auth_str = connection.authzid;
-    auth_str = auth_str + "\u0000";
-    auth_str = auth_str + connection.authcid;
-    auth_str = auth_str + "\u0000";
-    auth_str = auth_str + connection.pass;
-    return Utils.utf16to8(auth_str);
+      [String challenge, dynamic testCnonce]) async {
+    var authStr = connection.authzid;
+    authStr = authStr + "\u0000";
+    authStr = authStr + connection.authcid;
+    authStr = authStr + "\u0000";
+    authStr = authStr + connection.pass;
+    return Utils.utf16to8(authStr);
   }
 }
 
@@ -2440,57 +2446,55 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
   }
 
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, String test_cnonce]) async {
+      [String challenge, String testCnonce]) async {
     if (first) return await this._onChallenge(connection, challenge);
     Random random = new Random();
-    String cnonce = test_cnonce ??
-        MD5.hexdigest((random.nextDouble() * 1234567890).toString());
-    String auth_str = "n=" + Utils.utf16to8(connection.authcid);
-    auth_str += ",r=";
-    auth_str += cnonce;
-    connection._sasl_data['cnonce'] = cnonce;
-    connection._sasl_data["client-first-message-bare"] = auth_str;
+    String cnonce = testCnonce ??
+        await MD5.hexdigest((random.nextDouble() * 1234567890).toString());
+    String authStr = "n=" + Utils.utf16to8(connection.authcid);
+    authStr += ",r=";
+    authStr += cnonce;
+    connection._saslData['cnonce'] = cnonce;
+    connection._saslData["client-first-message-bare"] = authStr;
 
-    auth_str = "n,," + auth_str;
+    authStr = "n,," + authStr;
 
     first = true;
-    return auth_str;
+    return authStr;
   }
 
   Future<String> _onChallenge(
       StropheConnection connection, String challenge) async {
     String nonce, salt, iter;
-    int i, k;
-    List Hi, U, U_old;
+    List<int> hi, U, uOld;
     String serverKey, pass;
     List clientKey, clientSignature;
     String responseText = "c=biws,";
-    String authMessage = connection._sasl_data["client-first-message-bare"] +
+    String authMessage = connection._saslData["client-first-message-bare"] +
         "," +
         challenge +
         ",";
-    String cnonce = connection._sasl_data['cnonce'];
-    var attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
-
+    String cnonce = connection._saslData['cnonce'];
+    RegExp attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
     while (attribMatch.hasMatch(challenge)) {
-      List<Match> matches = attribMatch.allMatches(challenge).toList();
-      challenge = challenge.replaceAll(new RegExp(matches[0].group(0)), "");
-      switch (matches[0].group(1)) {
+      Match match = attribMatch.firstMatch(challenge);
+      challenge = challenge.replaceAll(match.group(0), "");
+      switch (match.group(1)) {
         case "r":
-          nonce = matches[0].group(2);
+          nonce = match.group(2);
           break;
         case "s":
-          salt = matches[0].group(2);
+          salt = match.group(2);
           break;
         case "i":
-          iter = matches[0].group(2);
+          iter = match.group(2);
           break;
       }
     }
 
     if (nonce.substring(0, cnonce.length) != cnonce) {
-      connection._sasl_data = {};
-      return connection._sasl_failure_cb();
+      connection._saslData = {};
+      return connection._saslFailureCb();
     }
 
     responseText += "r=" + nonce;
@@ -2498,25 +2502,27 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     salt = new String.fromCharCodes(base64.decode(salt));
     salt += "\x00\x00\x00\x01";
     pass = Utils.utf16to8(connection.pass);
-    Hi = await SHA1.core_hmac_sha1(pass, salt);
-    U_old = Hi;
-    for (i = 1; i < iter.length; i++) {
-      U = await SHA1.core_hmac_sha1(pass, await SHA1.binb2str(U_old));
-      for (k = 0; k < 5; k++) {
-        Hi[k] ^= U[k];
+    hi = await SHA1.core_hmac_sha1(pass, salt);
+    uOld = hi;
+    String s;
+    int parseInt = int.parse(iter, radix: 10);
+    for (int i = 1; i < parseInt; i++) {
+      s = await SHA1.binb2str(uOld);
+      U = await SHA1.core_hmac_sha1(pass, s);
+      for (int k = 0; k < 5; k++) {
+        hi[k] ^= U[k];
       }
-      U_old = U;
+      uOld = U;
     }
-    String HiStr = await SHA1.binb2str(Hi);
 
-    clientKey = await SHA1.core_hmac_sha1(HiStr, "Client Key");
-    serverKey = await SHA1.str_hmac_sha1(HiStr, "Server Key");
+    String hiStr = await SHA1.binb2str(hi);
+    clientKey = await SHA1.core_hmac_sha1(hiStr, "Client Key");
+    serverKey = await SHA1.str_hmac_sha1(hiStr, "Server Key");
     clientSignature = await SHA1.core_hmac_sha1(
         await SHA1.str_sha1(await SHA1.binb2str(clientKey)), authMessage);
-    connection._sasl_data["server-signature"] =
+    connection._saslData["server-signature"] =
         await SHA1.b64_hmac_sha1(serverKey, authMessage);
-
-    for (k = 0; k < 5; k++) {
+    for (int k = 0; k < 5; k++) {
       clientKey[k] ^= clientSignature[k];
     }
     String binb2str = await SHA1.binb2str(clientKey);
@@ -2544,12 +2550,12 @@ class StropheSASLMD5 extends StropheSASLMechanism {
   }
 
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, String test_cnonce]) async {
+      [String challenge, String testCnonce]) async {
     if (first) return "";
     if (challenge == null) challenge = '';
-    if (test_cnonce == null) test_cnonce = '';
+    if (testCnonce == null) testCnonce = '';
     RegExp attribMatch = new RegExp(r'([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)');
-    String cnonce = test_cnonce ??
+    String cnonce = testCnonce ??
         MD5.hexdigest(new Random().nextInt(1234567890).toString());
     var realm = "";
     var host;
@@ -2582,15 +2588,15 @@ class StropheSASLMD5 extends StropheSASLMechanism {
       }
     }
 
-    var digest_uri = connection.servtype + "/" + connection.domain;
+    var digestUri = connection.servtype + "/" + connection.domain;
     if (host != null) {
-      digest_uri = digest_uri + "/" + host;
+      digestUri = digestUri + "/" + host;
     }
 
     var cred = Utils.utf16to8(
         connection.authcid + ":" + realm + ":" + this._connection.pass);
-    String A1 = await MD5.hash(cred) + ":" + nonce + ":" + cnonce;
-    String A2 = 'AUTHENTICATE:' + digest_uri;
+    String a1 = await MD5.hash(cred) + ":" + nonce + ":" + cnonce;
+    String a2 = 'AUTHENTICATE:' + digestUri;
 
     String responseText = "";
     responseText += 'charset=utf-8,';
@@ -2600,15 +2606,15 @@ class StropheSASLMD5 extends StropheSASLMechanism {
     responseText += 'nonce=' + this._quote(nonce) + ',';
     responseText += 'nc=00000001,';
     responseText += 'cnonce=' + this._quote(cnonce) + ',';
-    responseText += 'digest-uri=' + this._quote(digest_uri) + ',';
+    responseText += 'digest-uri=' + this._quote(digestUri) + ',';
     responseText += 'response=' +
-        await MD5.hexdigest(await MD5.hexdigest(A1) +
+        await MD5.hexdigest(await MD5.hexdigest(a1) +
             ":" +
             nonce +
             ":00000001:" +
             cnonce +
             ":auth:" +
-            await MD5.hexdigest(A2)) +
+            await MD5.hexdigest(a2)) +
         ",";
     responseText += 'qop=auth';
     first = true;
@@ -2626,19 +2632,19 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
   }
 
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) async {
-    String auth_str = 'n,';
+      [String challenge, dynamic testCnonce]) async {
+    String authStr = 'n,';
     if (connection.authcid != null) {
-      auth_str = auth_str + 'a=' + connection.authzid;
+      authStr = authStr + 'a=' + connection.authzid;
     }
-    auth_str = auth_str + ',';
-    auth_str = auth_str + "\u0001";
-    auth_str = auth_str + 'auth=Bearer ';
-    auth_str = auth_str + connection.pass;
-    auth_str = auth_str + "\u0001";
-    auth_str = auth_str + "\u0001";
+    authStr = authStr + ',';
+    authStr = authStr + "\u0001";
+    authStr = authStr + 'auth=Bearer ';
+    authStr = authStr + connection.pass;
+    authStr = authStr + "\u0001";
+    authStr = authStr + "\u0001";
 
-    return Utils.utf16to8(auth_str);
+    return Utils.utf16to8(authStr);
   }
 }
 
@@ -2653,7 +2659,7 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
 class StropheSASLExternal extends StropheSASLMechanism {
   StropheSASLExternal() : super("EXTERNAL", true, 10);
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) async {
+      [String challenge, dynamic testCnonce]) async {
     /** According to XEP-178, an authzid SHOULD NOT be presented when the
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authcid contained or implied in the client certificate is the JID (i.e.
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authzid) with which the user wants to log in as.
@@ -2675,15 +2681,15 @@ class StropheSASLXOAuth2 extends StropheSASLMechanism {
   }
 
   Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic Stringtest_cnonce]) async {
-    String auth_str = '\u0000';
+      [String challenge, dynamic testCnonce]) async {
+    String authStr = '\u0000';
     if (connection.authcid != null) {
-      auth_str = auth_str + connection.authzid;
+      authStr = authStr + connection.authzid;
     }
-    auth_str = auth_str + "\u0000";
-    auth_str = auth_str + connection.pass;
+    authStr = authStr + "\u0000";
+    authStr = authStr + connection.pass;
 
-    return Utils.utf16to8(auth_str);
+    return Utils.utf16to8(authStr);
   }
 }
 
@@ -2720,7 +2726,7 @@ abstract class ServiceType {
     return true;
   }
 
-  connect_cb(xml.XmlElement bodyWrap) {}
+  connectCb(xml.XmlElement bodyWrap) {}
 
   void onDisconnectTimeout() {}
 

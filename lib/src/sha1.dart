@@ -218,4 +218,11 @@ class SHA1 {
     //return binb2str(core_sha1(str2binb(s), s.length * 8));
     return await _methodChannel.invokeMethod("str_sha1", [s]);
   }
+
+  static Future<List<int>> forEachBinaryXor(
+      List<int> tab1, List<int> tab2, int length) async {
+    //return binb2str(core_sha1(str2binb(s), s.length * 8));
+    return await _methodChannel
+        .invokeMethod("forEachBinaryXor", [tab1, tab2, length]);
+  }
 }
