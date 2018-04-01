@@ -530,6 +530,14 @@ class StropheConnection {
 
   StropheSASLMechanism _saslMechanism;
 
+  XmlInputCallback _xmlInputCallback = (xml.XmlElement elem) => {};
+
+  XmlInputCallback _xmlOutputCallback = (xml.XmlElement elem) => {};
+
+  RawInputCallback _rawInputCallback = (String elem) => {};
+
+  RawInputCallback _rawOutputCallback = (String elem) => {};
+
   // The service URL
   int get uniqueId {
     return this._uniqueId;
@@ -932,8 +940,13 @@ class StropheConnection {
                                          *    (XMLElement) elem - The XML data received by the connection.
                                          */
   /* jshint unused:false */
-  xmlInput(xml.XmlElement elem) {
-    return;
+
+  set xmlInput(XmlInputCallback callback) {
+    this._xmlInputCallback = callback;
+  }
+
+  XmlInputCallback get xmlInput {
+    return this._xmlInputCallback;
   }
   /* jshint unused:true */
 
@@ -956,8 +969,12 @@ class StropheConnection {
                                          *    (XMLElement) elem - The XMLdata sent by the connection.
                                          */
   /* jshint unused:false */
-  xmlOutput(xml.XmlElement elem) {
-    return;
+  set xmlOutput(XmlInputCallback callback) {
+    this._xmlOutputCallback = callback;
+  }
+
+  XmlInputCallback get xmlOutput {
+    return this._xmlOutputCallback;
   }
   /* jshint unused:true */
 
@@ -974,8 +991,12 @@ class StropheConnection {
                                          *    (String) data - The data received by the connection.
                                          */
   /* jshint unused:false */
-  rawInput(String data) {
-    return;
+  set rawInput(RawInputCallback callback) {
+    this._rawInputCallback = callback;
+  }
+
+  RawInputCallback get rawInput {
+    return this._rawInputCallback;
   }
   /* jshint unused:true */
 
@@ -992,8 +1013,12 @@ class StropheConnection {
                                          *    (String) data - The data sent by the connection.
                                          */
   /* jshint unused:false */
-  rawOutput(String data) {
-    return;
+  set rawOutput(RawInputCallback callback) {
+    this._rawOutputCallback = callback;
+  }
+
+  RawInputCallback get rawOutput {
+    return this._rawOutputCallback;
   }
   /* jshint unused:true */
 

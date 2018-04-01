@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:xml/xml/nodes/element.dart';
+
 class Utils {
   static String utf16to8(String str) {
     int c;
@@ -54,3 +56,5 @@ class Utils {
 }
 
 typedef void ConnectCallBack(int status, dynamic condition, dynamic elem);
+typedef void XmlInputCallback(XmlElement elem);
+typedef void RawInputCallback(String elem);
