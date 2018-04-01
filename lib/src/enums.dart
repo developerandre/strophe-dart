@@ -66,9 +66,24 @@ const Map<String, int> ELEMENTTYPE = const {
 };
 
 class StanzaBuilder {
-  xml.XmlNode node;
+  List<int> node = [];
   xml.XmlNode nodeTree;
-  StanzaBuilder(this.node, this.nodeTree);
+  StanzaBuilder(String name, [Map<String, dynamic> attrs]) {
+    // Set correct namespace for jabber:client elements
+    if (name == "presence" || name == "message" || name == "iq") {
+      if (attrs != null && attrs['xmlns'] == null) {
+        attrs['xmlns'] = Strophe.NS['CLIENT'];
+      } else if (attrs == null) {
+        attrs = {'xmlns': Strophe.NS['CLIENT']};
+      }
+    }
+
+    // Holds the tree being built.
+    this.nodeTree = Strophe.xmlElement(name, attrs: attrs);
+
+    // Points to the current operation node.
+    this.node = [0];
+  }
 
   /** Function: tree
      *  Return the DOM tree.
@@ -112,7 +127,7 @@ class StanzaBuilder {
      *    The Stophe.Builder object.
      */
   StanzaBuilder up() {
-    this.node = this.node.parent;
+    if (this.node.length > 0) this.node.removeLast();
     return this;
   }
 
@@ -127,7 +142,8 @@ class StanzaBuilder {
      *    The Stophe.Builder object.
      */
   StanzaBuilder root() {
-    this.node = this.nodeTree;
+    this.node = [];
+    this.nodeTree = this.nodeTree.root;
     return this;
   }
 
@@ -146,12 +162,17 @@ class StanzaBuilder {
   StanzaBuilder attrs(Map<String, dynamic> moreattrs) {
     moreattrs.forEach((String key, dynamic value) {
       if (value == null || value.isEmpty) {
-        this.node.attributes.removeWhere((xml.XmlAttribute attr) {
+        this
+            .nodeTree
+            .firstChild
+            .attributes
+            .removeWhere((xml.XmlAttribute attr) {
           return attr.name.qualified == key;
         });
       } else {
         this
-            .node
+            .nodeTree
+            .firstChild
             .attributes
             .add(new xml.XmlAttribute(new xml.XmlName.fromString(key), value));
       }
@@ -180,13 +201,13 @@ class StanzaBuilder {
     xml.XmlElement xmlElement = child is xml.XmlDocument
         ? child.rootElement
         : (child as xml.XmlElement);
-    if (this.node.children.length == 1)
-      this.node.firstChild.children.add(Strophe.copyElement(xmlElement));
-    else
-      this.node.children.add(Strophe.copyElement(xmlElement));
-    if (!(text is String) && !(text is num)) {
-      this.node = child;
+
+    xml.XmlNode currentNode = this.nodeTree.children[0];
+    for (int i = 1; i < this.node.length; i++) {
+      currentNode = currentNode.children[this.node[i]];
     }
+    currentNode.children.add(Strophe.copyElement(xmlElement));
+    this.node.add(currentNode.children.length - 1);
     return this;
   }
 
@@ -206,8 +227,12 @@ class StanzaBuilder {
      */
   StanzaBuilder cnode(xml.XmlNode elem) {
     var newElem = Strophe.copyElement(elem);
-    this.node.children.add(newElem);
-    this.node = newElem;
+    xml.XmlNode currentNode = this.nodeTree.children[0];
+    for (int i = 1; i < this.node.length; i++) {
+      currentNode = currentNode.children[this.node[i]];
+    }
+    currentNode.children.add(Strophe.copyElement(newElem));
+    this.node.add(currentNode.children.length - 1);
     return this;
   }
 
@@ -224,13 +249,11 @@ class StanzaBuilder {
      *    The Strophe.Builder object.
      */
   StanzaBuilder t(String text) {
-    //xml.XmlNode child = Strophe.xmlTextNode(text);
-    if (this.node.children.length == 1)
-      this.node.firstChild.children.add(new xml.XmlText(text));
-    else if (this.node.children.length > 1)
-      this.node.children.add(new xml.XmlText(text));
-    else
-      this.node.children.add(new xml.XmlText(text));
+    xml.XmlNode currentNode = this.nodeTree.children[0];
+    for (int i = 1; i < this.node.length; i++) {
+      currentNode = currentNode.children[this.node[i]];
+    }
+    currentNode.children.add(Strophe.copyElement(new xml.XmlText(text)));
     return this;
   }
 
@@ -253,10 +276,11 @@ class StanzaBuilder {
 
     // copy cleaned html into an xml dom
     xml.XmlNode xhtml = Strophe.createHtml(fragment);
-
-    while (xhtml.children.length > 0) {
-      this.node.children.add(xhtml.firstChild);
+    xml.XmlNode currentNode = this.nodeTree.children[0];
+    for (int i = 1; i < this.node.length; i++) {
+      currentNode = currentNode.children[this.node[i]];
     }
+    currentNode.children.add(Strophe.copyElement(xhtml));
     return this;
   }
 }
@@ -486,7 +510,7 @@ class StropheConnection {
 
   bool restored;
 
-  List _data;
+  List<dynamic> _data;
 
   int _uniqueId;
 
@@ -1021,7 +1045,6 @@ class StropheConnection {
         this._queueData(elem.tree());
       }
     }
-
     this._proto.send();
   }
 
@@ -1056,16 +1079,14 @@ class StropheConnection {
                                                                                      *  Returns:
                                                                                      *    The id used to send the presence.
                                                                                      */
-  sendPresence(xml.XmlNode elem,
+  String sendPresence(xml.XmlNode element,
       [Function callback, Function errback, int timeout]) {
-    var timeoutHandler;
-    elem = elem.root;
-    xml.XmlAttribute firstWhere =
-        elem.attributes.firstWhere((xml.XmlAttribute attr) {
-      return attr.name.toString() == 'id';
-    });
-    String id = firstWhere != null ? firstWhere.value : '';
-    if (id == null) {
+    StanzaTimedHandler timeoutHandler;
+    xml.XmlElement elem = element is xml.XmlDocument
+        ? element.rootElement
+        : (element as xml.XmlElement);
+    String id = elem.getAttribute("id");
+    if (id == null || id.isEmpty) {
       // inject id if not found
       id = this.getUniqueId("sendPresence");
       elem.attributes
@@ -1075,14 +1096,10 @@ class StropheConnection {
     if (callback == null || errback == null) {
       var handler = this.addHandler((stanza) {
         // remove timeout handler if there is one
-        if (timeoutHandler) {
+        if (timeoutHandler != null) {
           this.deleteTimedHandler(timeoutHandler);
         }
-        xml.XmlAttribute firstWhere =
-            elem.attributes.firstWhere((xml.XmlAttribute attr) {
-          return attr.name.toString() == 'type';
-        });
-        String type = firstWhere != null ? firstWhere.value : '';
+        String type = elem.getAttribute("type");
         if (type == 'error') {
           if (errback != null) {
             errback(stanza);
@@ -1187,13 +1204,15 @@ class StropheConnection {
                                                                                      *  Queue outgoing data for later sending.  Also ensures this the data
                                                                                      *  is a DOMElement.
                                                                                      */
-  _queueData(xml.XmlElement element) {
-    if (element == null ||
-        element.name == null ||
-        element.children.length <= 0) {
+  _queueData(xml.XmlNode element) {
+    xml.XmlElement elem = element is xml.XmlDocument
+        ? element.rootElement
+        : (element as xml.XmlElement);
+
+    if (elem == null || elem.name == null) {
       throw {'name': "StropheError", 'message': "Cannot queue non-DOMElement."};
     }
-    this._data.add(element);
+    this._data.add(elem);
   }
 
   /** PrivateFunction: _sendRestart
@@ -1456,9 +1475,10 @@ class StropheConnection {
         if (connectCallback != null)
           this.connectCallback(status, condition, elem);
       } catch (e) {
-        Strophe.handleError(e);
-        Strophe
-            .error("User connection callback caused an " + "exception: " + e);
+        if (e is Error) Strophe.handleError(e);
+        Strophe.error("User connection callback caused an " +
+            "exception: " +
+            e.toString());
       }
     }
   }
@@ -1526,7 +1546,6 @@ class StropheConnection {
     if (elem == null) {
       return;
     }
-
     //if (this.xmlInput != Strophe.Connection.xmlInput) {
     if (elem.name.qualified == this._proto.strip && elem.children.length > 0) {
       this.xmlInput(elem.firstChild);
@@ -1610,8 +1629,8 @@ class StropheConnection {
           }
         } catch (e) {
           // if the handler throws an exception, we consider it as false
-          /* Strophe.warn('Removing Strophe handlers due to uncaught exception: ' +
-              e.message); */
+          Strophe.warn('Removing Strophe handlers due to uncaught exception: ' +
+              e.toString());
         }
       }
     });
@@ -1668,7 +1687,7 @@ class StropheConnection {
     try {
       bodyWrap = this._proto.reqToData(req);
     } catch (e) {
-      if (e != "badformat") {
+      if (e.toString() != "badformat") {
         throw e;
       }
       this._changeConnectStatus(
@@ -1717,7 +1736,8 @@ class StropheConnection {
     List<StropheSASLMechanism> matched = [];
 
     String mech;
-    Iterable<xml.XmlElement> mechanisms = bodyWrap.findAllElements("mechanism");
+    List<xml.XmlElement> mechanisms =
+        bodyWrap.findAllElements("mechanism").toList();
     if (mechanisms.length > 0) {
       for (int i = 0; i < mechanisms.length; i++) {
         mech = Strophe.getText(mechanisms.elementAt(i));

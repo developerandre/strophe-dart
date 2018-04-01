@@ -61,7 +61,7 @@ class StropheBosh extends ServiceType {
      *  This will enable stripping of the body tag in both
      *  <Strophe.Connection.xmlInput> and <Strophe.Connection.xmlOutput>.
      */
-  String strip;
+  String strip = null;
 
   /** PrivateFunction: _buildBody
      *  _Private_ helper function to generate the <body/> wrapper for BOSH.

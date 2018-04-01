@@ -360,10 +360,7 @@ class Strophe {
     if (elem.nodeType == xml.XmlNodeType.ELEMENT) {
       el = elem.copy();
     } else if (elem.nodeType == xml.XmlNodeType.TEXT) {
-      xml.XmlBuilder builder = Strophe.xmlGenerator();
-      builder.element('strophe',
-          namespace: 'jabber:client', nest: elem.toString());
-      el = builder.build();
+      el = elem;
     }
     return el;
   }
@@ -705,21 +702,7 @@ class Strophe {
  *    A new Strophe.Builder.
 */
   static StanzaBuilder Builder(String name, {Map<String, dynamic> attrs}) {
-    // Set correct namespace for jabber:client elements
-    if (name == "presence" || name == "message" || name == "iq") {
-      if (attrs != null && attrs['xmlns'] == null) {
-        attrs['xmlns'] = Strophe.NS['CLIENT'];
-      } else if (attrs == null) {
-        attrs = {'xmlns': Strophe.NS['CLIENT']};
-      }
-    }
-
-    // Holds the tree being built.
-    xml.XmlNode nodeTree = Strophe.xmlElement(name, attrs: attrs);
-
-    // Points to the current operation node.
-    xml.XmlNode node = nodeTree;
-    return new StanzaBuilder(node, nodeTree);
+    return new StanzaBuilder(name, attrs);
   }
 /** PrivateClass: Strophe.Handler
  *  _Private_ helper class for managing stanza handlers.

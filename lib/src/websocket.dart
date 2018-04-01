@@ -92,8 +92,9 @@ class StropheWebSocket extends ServiceType {
     String text = "";
 
     String ns = "urn:ietf:params:xml:ns:xmpp-streams";
+    xml.XmlElement e;
     for (int i = 0; i < error.children.length; i++) {
-      xml.XmlElement e = error.children.elementAt(i) as xml.XmlElement;
+      e = error.children.elementAt(i) as xml.XmlElement;
       if (e.getAttribute("xmlns") != ns) {
         break;
       }
