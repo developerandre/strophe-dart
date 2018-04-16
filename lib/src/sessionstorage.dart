@@ -3,6 +3,7 @@ import 'dart:io';
 class SessionStorage {
   static Map<String, String> _session = {};
   static List<Cookie> _cookie = [];
+  
   List<Cookie> get cookies {
     return _cookie;
   }
