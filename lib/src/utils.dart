@@ -1,12 +1,13 @@
 import 'dart:io';
 
+import 'package:strophe/src/enums.dart';
 import 'package:xml/xml/nodes/element.dart';
 
 class Utils {
   static String utf16to8(String str) {
     int c;
     String out = "";
-    var len = str.length;
+    int len = str.length;
     for (int i = 0; i < len; i++) {
       c = str.codeUnitAt(i);
       if ((c >= 0x0000) && (c <= 0x007F)) {
@@ -58,3 +59,5 @@ class Utils {
 typedef void ConnectCallBack(int status, dynamic condition, dynamic elem);
 typedef void XmlInputCallback(XmlElement elem);
 typedef void RawInputCallback(String elem);
+typedef void ConnexionCallback(req, Function _callback, String raw);
+typedef void AuthenticateCallback(List<StropheSASLMechanism> matched);

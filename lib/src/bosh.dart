@@ -268,11 +268,11 @@ class StropheBosh extends ServiceType {
      *  Parameters:
      *    (Request) bodyWrap - The received stanza.
      */
-  connect_cb(xml.XmlElement bodyWrap) {
-    this._connect_cb(bodyWrap);
+  connectCb(xml.XmlElement bodyWrap) {
+    this._connectCb(bodyWrap);
   }
 
-  _connect_cb(xml.XmlElement bodyWrap) {
+  _connectCb(xml.XmlElement bodyWrap) {
     String typ = bodyWrap.getAttribute("type");
     String cond;
     List<xml.XmlElement> conflict;
@@ -790,7 +790,8 @@ class StropheBosh extends ServiceType {
      *  Returns:
      *    The stanza that was passed.
      */
-  xml.XmlElement reqToData(StropheRequest req) {
+  xml.XmlElement reqToData(dynamic req) {
+    req = req as StropheRequest;
     return this._reqToData(req);
   }
 

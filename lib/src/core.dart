@@ -1,4 +1,5 @@
 import 'package:strophe/src/bosh.dart';
+import 'package:strophe/src/plugins/plugins.dart';
 import 'package:strophe/src/websocket.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:strophe/src/enums.dart';
@@ -21,8 +22,8 @@ class Strophe {
      */
   static const num TIMEOUT = 1.1;
   static const num SECONDARY_TIMEOUT = 0.1;
-  static const Map<String, int> Status = ConnexionStatus;
-  static const Map<String, String> NS = NAMESPACE;
+  static Map<String, int> Status = ConnexionStatus;
+  static Map<String, String> NS = NAMESPACE;
   static const Map<String, String> ErrorCondition = ERRORSCONDITIONS;
   static const Map<String, int> LogLevel = LOGLEVEL;
   static const Map<String, int> ElementType = ELEMENTTYPE;
@@ -77,7 +78,7 @@ class Strophe {
          * XHTML tag names are case sensitive and must be lower case.
          */
     'validTag': (String tag) {
-      for (var i = 0; i < Strophe.XHTML['tags'].length; i++) {
+      for (int i = 0; i < Strophe.XHTML['tags'].length; i++) {
         if (tag == Strophe.XHTML['tags'][i]) {
           return true;
         }
@@ -103,7 +104,7 @@ class Strophe {
       return false;
     },
     'validCSS': (style) {
-      for (var i = 0; i < Strophe.XHTML['css'].length; i++) {
+      for (int i = 0; i < Strophe.XHTML['css'].length; i++) {
         if (style == Strophe.XHTML['css'][i]) {
           return true;
         }
@@ -143,10 +144,18 @@ class Strophe {
      *      function should take a single argument, a DOM element.
      */
   static void forEachChild(elem, String elemName, Function func) {
-    xml.XmlElement childNode;
+    if (elem == null) return;
+    var childNode;
     for (int i = 0; i < elem.children.length; i++) {
-      childNode = elem.children.elementAt(i);
-      //Strophe.ElementType['NORMAL']
+      try {
+        if (elem.children.elementAt(i) is xml.XmlElement)
+          childNode = elem.children.elementAt(i);
+        else if (elem.children.elementAt(i) is xml.XmlDocument)
+          childNode = elem.rootElement.children.elementAt(i);
+      } catch (e) {
+        childNode = null;
+      }
+      if (childNode == null) continue;
       if (childNode.nodeType == xml.XmlNodeType.ELEMENT &&
           (elemName == null || isTagEqual(childNode, elemName))) {
         func(childNode);
@@ -224,21 +233,26 @@ class Strophe {
     }
     if (attrs != null &&
         (attrs is! List<List<String>>) &&
-        (attrs is! Map<String, String>)) {
+        (attrs is! Map<String, dynamic>)) {
       return null;
     }
-
     Map<String, String> attributes = {};
     if (attrs != null) {
       if (attrs is List<List<String>>) {
         for (int i = 0; i < attrs.length; i++) {
           List<String> attr = attrs[i];
           if (attr.length == 2 && attr[1] != null && attr.isNotEmpty) {
-            attributes[attr[0]] = attr[1];
+            attributes[attr[0]] = attr[1].toString();
           }
         }
-      } else if (attrs is Map<String, String>) {
-        attributes = attrs;
+      } else if (attrs is Map<String, dynamic>) {
+        List<String> keys = attrs.keys.toList();
+        for (int i = 0, len = keys.length; i < len; i++) {
+          String key = keys[i];
+          if (key != null && key.isNotEmpty && attrs[key] != null) {
+            attributes[key] = attrs[key].toString();
+          }
+        }
       }
     }
     xml.XmlBuilder builder = Strophe.xmlGenerator();
@@ -294,7 +308,7 @@ class Strophe {
      */
   static xml.XmlNode xmlTextNode(String text) {
     xml.XmlBuilder builder = Strophe.xmlGenerator();
-    builder.element('strophe', namespace: 'jabber:client', nest: text);
+    builder.element('strophe', nest: text);
     return builder.build();
   }
 
@@ -356,11 +370,13 @@ class Strophe {
      *    A new, copied DOM element tree.
      */
   static xml.XmlNode copyElement(xml.XmlNode elem) {
-    var el;
+    var el = elem;
     if (elem.nodeType == xml.XmlNodeType.ELEMENT) {
       el = elem.copy();
     } else if (elem.nodeType == xml.XmlNodeType.TEXT) {
       el = elem;
+    } else if (elem.nodeType == xml.XmlNodeType.DOCUMENT) {
+      el = elem.document.rootElement;
     }
     return el;
   }
@@ -644,8 +660,8 @@ class Strophe {
      *  _Private_ variable Used to store plugin names that need
      *  initialization on Strophe.Connection construction.
      */
-  static Map<String, dynamic> _connectionPlugins = {};
-  static Map<String, dynamic> get connectionPlugins {
+  static Map<String, PluginClass> _connectionPlugins = {};
+  static Map<String, PluginClass> get connectionPlugins {
     return _connectionPlugins;
   }
 
@@ -656,7 +672,7 @@ class Strophe {
      *    (String) name - The name of the extension.
      *    (Object) ptype - The plugin's prototype.
      */
-  addConnectionPlugin(String name, ptype) {
+  static void addConnectionPlugin(String name, ptype) {
     Strophe._connectionPlugins[name] = ptype;
   }
 /** Class: Strophe.Builder
@@ -734,15 +750,14 @@ class Strophe {
  *    A new Strophe.Handler object.
 */
   static StanzaHandler Handler(Function handler, String ns, String name,
-      [String type, String id, String from, Map options]) {
-    StanzaHandler stanzaHandler = new StanzaHandler(
-        handler,
-        ns,
-        name,
-        type,
-        id,
-        options ??
-            {'matchBareFromJid': false, 'ignoreNamespaceFragment': false});
+      [type, String id, String from, Map options]) {
+    if (options != null) {
+      options.putIfAbsent('matchBareFromJid', () => false);
+      options.putIfAbsent('ignoreNamespaceFragment', () => false);
+    } else
+      options = {'matchBareFromJid': false, 'ignoreNamespaceFragment': false};
+    StanzaHandler stanzaHandler =
+        new StanzaHandler(handler, ns, name, type, id, options);
     // BBB: Maintain backward compatibility with old `matchBare` option
     if (stanzaHandler.options['matchBare'] != null) {
       Strophe.warn(
