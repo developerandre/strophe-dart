@@ -14,6 +14,7 @@ export 'src/plugins/muc.dart';
 export 'src/plugins/pep.dart';
 export 'src/plugins/plugins.dart';
 export 'src/plugins/privacy.dart';
+export 'src/plugins/pubsub.dart';
 export 'src/plugins/private-storage.dart';
 export 'src/plugins/register.dart';
 export 'src/plugins/roster.dart';
