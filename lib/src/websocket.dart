@@ -155,8 +155,8 @@ class StropheWebSocket extends ServiceType {
 
     if (this.socketListen == null || this.socket == null) {
       // Create the new WebSocket
-      WebSocket.connect(this._conn.service, protocols: ['xmpp']).then(
-          (WebSocket socket) {
+      WebSocket.connect(this._conn.service, protocols: ['xmpp'])
+          .then((WebSocket socket) {
         this.socket = socket;
         this.socketListen = this.socket.listen(this._connectCbWrapper,
             onError: this._onError, onDone: this._onClose);

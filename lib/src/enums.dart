@@ -822,10 +822,10 @@ class StropheConnection {
         this.authenticate(matched);
       }
     };
-    this._authenticate = (List<StropheSASLMechanism> matched) async {
-      if (!await this._attemptSASLAuth(matched)) {
-        this._attemptLegacyAuth();
-      }
+    this._authenticate = (List<StropheSASLMechanism> matched) {
+      this._attemptSASLAuth(matched).then((bool result) {
+        if (result == true) this._attemptLegacyAuth();
+      });
     };
   }
 
@@ -1681,16 +1681,16 @@ class StropheConnection {
       StanzaBuilder pres;
       this.disconnecting = true;
       if (this.authenticated) {
-        pres = Strophe
-            .$pres({'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
+        pres = Strophe.$pres(
+            {'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
       }
       // setup timeout handler
       this._disconnectTimeout =
           this._addSysTimedHandler(3000, this._onDisconnectTimeout);
       this._proto.disconnect(pres.tree());
     } else {
-      Strophe
-          .info("Disconnect was called before Strophe connected to the server");
+      Strophe.info(
+          "Disconnect was called before Strophe connected to the server");
       this._proto.abortAllRequests();
       this._doDisconnect();
     }
@@ -2045,8 +2045,7 @@ class StropheConnection {
       // Fall back to legacy authentication
       this._changeConnectStatus(Strophe.Status['AUTHENTICATING'], null);
       this._addSysHandler(this._auth1Cb, null, null, null, "_auth_1");
-      this.send(Strophe
-          .$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
+      this.send(Strophe.$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
           .c("query", {'xmlns': Strophe.NS['AUTH']})
           .c("username", {})
           .t(Strophe.getNodeFromJid(this.jid))
@@ -2111,8 +2110,7 @@ class StropheConnection {
   /* jshint unused:false */
   _auth1Cb(elem) {
     // build plaintext auth iq
-    StanzaBuilder iq = Strophe
-        .$iq({'type': "set", 'id': "_auth_2"})
+    StanzaBuilder iq = Strophe.$iq({'type': "set", 'id': "_auth_2"})
         .c('query', {'xmlns': Strophe.NS['AUTH']})
         .c('username', {})
         .t(Strophe.getNodeFromJid(this.jid))
@@ -2238,15 +2236,14 @@ class StropheConnection {
 
       String resource = Strophe.getResourceFromJid(this.jid);
       if (resource != null && resource.isNotEmpty) {
-        this.send(Strophe
-            .$iq({'type': "set", 'id': "_bind_auth_2"})
+        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
             .c('bind', {"xmlns": Strophe.NS['BIND']})
             .c('resource', {})
             .t(resource)
             .tree());
       } else {
-        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"}).c(
-            'bind', {'xmlns': Strophe.NS['BIND']}).tree());
+        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
+            .c('bind', {'xmlns': Strophe.NS['BIND']}).tree());
       }
     }
     return false;
@@ -2284,8 +2281,8 @@ class StropheConnection {
         if (this.doSession) {
           this._addSysHandler(
               this._saslSessionCb, null, null, null, "_session_auth_2");
-          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"}).c(
-              'session', {'xmlns': Strophe.NS['SESSION']}).tree());
+          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"})
+              .c('session', {'xmlns': Strophe.NS['SESSION']}).tree());
         } else {
           this.authenticated = true;
           this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
