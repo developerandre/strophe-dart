@@ -298,8 +298,8 @@ class StropheWebSocket extends ServiceType {
       } catch (e) {
         Strophe.info("Couldn't send <close /> tag.");
       }
+      this._conn.doDisconnect();
     }
-    this._conn.doDisconnect();
   }
 
   /** PrivateFunction: _doDisconnect
@@ -465,8 +465,8 @@ class StropheWebSocket extends ServiceType {
      * Parameters:
      * (string) message - The websocket message.
      */
-  void _onMessage(dynamic message) {
-    message = message as String;
+  void _onMessage(dynamic msg) {
+    String message = msg as String;
     xml.XmlDocument elem;
     String data;
     // check for closing stream
@@ -504,6 +504,7 @@ class StropheWebSocket extends ServiceType {
       // wait for the </stream:stream> tag before we close the connection
       return;
     }
+    print('elem $elem');
     this._conn.dataRecv(elem.rootElement, message);
   }
 
