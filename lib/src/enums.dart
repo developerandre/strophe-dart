@@ -2644,7 +2644,8 @@ class StropheSASLAnonymous extends StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 
 class StropheSASLPlain extends StropheSASLMechanism {
-  StropheSASLPlain() : super("PLAIN", true, 50);
+  //StropheSASLPlain() : super("PLAIN", true, 50);
+  StropheSASLPlain() : super("PLAIN", true, 90);
   bool test(StropheConnection connection) {
     return connection.authcid != null;
   }
