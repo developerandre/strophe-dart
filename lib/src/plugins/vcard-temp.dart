@@ -103,45 +103,48 @@ class VCardEl {
     DESC = desc ?? '';
   }
   XmlElement tree() {
-    StanzaBuilder build = Strophe
-        .$build("vCard", {'xmlns': Strophe.NS['VCARD']})
-        .c('FN')
-        .t(FN)
-        .up()
-        .c('N')
-        .c('FAMILY')
-        .t(FAMILY)
-        .up()
-        .c('GIVEN')
-        .t(GIVEN)
-        .up()
-        .c('MIDDLE')
-        .t(MIDDLE)
-        .up()
-        .up()
-        .c('NICKNAME')
-        .t(NICKNAME)
-        .up()
-        .c('URL')
-        .t(URL)
-        .up()
-        .c('BDAY')
-        .t(BDAY)
-        .up()
-        .c('ORG')
-        .c('ORGNAME')
-        .t(ORGNAME)
-        .up()
-        .c('ORGUNIT')
-        .t(ORGUNIT)
-        .up()
-        .up()
-        .c('TITLE')
-        .t(TITLE)
-        .up()
-        .c('ROLE')
-        .t(ROLE)
-        .up();
+    StanzaBuilder build =
+        Strophe.$build("vCard", {'xmlns': Strophe.NS['VCARD']})
+            .c('FN')
+            .t(FN)
+            .up()
+            .c('N')
+            .c('FAMILY')
+            .t(FAMILY)
+            .up()
+            .c('GIVEN')
+            .t(GIVEN)
+            .up()
+            .c('MIDDLE')
+            .t(MIDDLE)
+            .up()
+            .up()
+            .c('NICKNAME')
+            .t(NICKNAME)
+            .up()
+            .c('URL')
+            .t(URL)
+            .up()
+            .c('EMAIL')
+            .t(EMAIL)
+            .up()
+            .c('BDAY')
+            .t(BDAY)
+            .up()
+            .c('ORG')
+            .c('ORGNAME')
+            .t(ORGNAME)
+            .up()
+            .c('ORGUNIT')
+            .t(ORGUNIT)
+            .up()
+            .up()
+            .c('TITLE')
+            .t(TITLE)
+            .up()
+            .c('ROLE')
+            .t(ROLE)
+            .up();
     addresses.forEach((VCardElAddr addr) {
       if (addr != null) {
         addr.tree().children.forEach((XmlNode elem) {
@@ -155,6 +158,7 @@ class VCardEl {
         .t(EMAIL)
         .up()
         .c('PREF')
+        .t(EMAIL)
         .up()
         .c('USERID')
         .t(USERID)
@@ -164,6 +168,7 @@ class VCardEl {
         .t(JABBERID)
         .c('DESC')
         .t(DESC);
+    print(build.tree());
     return build.tree();
   }
 }
@@ -203,8 +208,7 @@ class VCardElAddr {
     CTRY = country ?? '';
   }
   XmlElement tree() {
-    return Strophe
-        .$build('addr', {})
+    return Strophe.$build('addr', {})
         .c('TEL')
         .c(typeAddr != null ? typeAddr.toUpperCase() : 'WORK')
         .up()
