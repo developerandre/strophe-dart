@@ -1,8 +1,24 @@
+import 'dart:async';
+
+import 'package:strophe/strophe.dart';
+import 'package:test/test.dart';
+
 void main() {
-  /* test('adds one to input values', () {
-      expect(calculator.addOne(2), 3);
-    expect(calculator.addOne(-7), -6);
-    expect(calculator.addOne(0), 1);
-    expect(() => calculator.addOne(null), throwsNoSuchMethodError); 
-  }); */
+  test('adds one to input values', () async {
+    StropheConnection _connection =
+        Strophe.Connection("ws://127.0.0.1:5280/xmpp");
+    _connection.xmlInput = (elem) {
+      print('input $elem');
+    };
+    _connection.xmlOutput = (elem) {
+      print('output $elem');
+    };
+    _connection.connect('11111@localhost', 'jesuis123',
+        (int status, condition, ele) {
+      print("$status $ele");
+    });
+    await Future.delayed(Duration(days: 1), () {
+      print('kehhh');
+    });
+  });
 }

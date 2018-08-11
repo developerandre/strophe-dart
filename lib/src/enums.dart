@@ -746,7 +746,6 @@ class StropheConnection {
       this._uniqueId = 0;
     };
     this._connectCb = (req, Function _callback, String raw) {
-      Strophe.info("_connect_cb was called");
       this.connected = true;
 
       xml.XmlElement bodyWrap;
@@ -824,7 +823,7 @@ class StropheConnection {
     };
     this._authenticate = (List<StropheSASLMechanism> matched) {
       this._attemptSASLAuth(matched).then((bool result) {
-        if (result == true) this._attemptLegacyAuth();
+        if (result != true) this._attemptLegacyAuth();
       });
     };
   }
@@ -1687,7 +1686,7 @@ class StropheConnection {
       // setup timeout handler
       this._disconnectTimeout =
           this._addSysTimedHandler(3000, this._onDisconnectTimeout);
-      this._proto.disconnect(pres.tree());
+      this._proto.disconnect(pres?.tree());
     } else {
       Strophe.info(
           "Disconnect was called before Strophe connected to the server");
@@ -1759,8 +1758,6 @@ class StropheConnection {
       this.deleteTimedHandler(this._disconnectTimeout);
       this._disconnectTimeout = null;
     }
-
-    Strophe.info("_doDisconnect was called");
     this._proto.doDisconnect();
 
     this.authenticated = false;
@@ -1797,7 +1794,6 @@ class StropheConnection {
   }
 
   _dataRecv(req, [String raw]) {
-    Strophe.info("_dataRecv called");
     xml.XmlElement elem = this._proto.reqToData(req);
     if (elem == null) {
       return;
@@ -2429,7 +2425,6 @@ class StropheConnection {
   }
 
   bool _onDisconnectTimeout() {
-    Strophe.info("_onDisconnectTimeout was called");
     this._changeConnectStatus(Strophe.Status['CONNTIMEOUT'], null);
     this._proto.onDisconnectTimeout();
     // actually disconnect
@@ -2489,7 +2484,6 @@ class StropheConnection {
     this._idleTimeout.cancel();
 
     this._proto.onIdle();
-
     // reactivate the timer only if connected
     if (this.connected) {
       // XXX: setTimeout should be called only with function expressions (23974bc1)
@@ -2764,6 +2758,7 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
 class StropheSASLMD5 extends StropheSASLMechanism {
   static bool first = false;
   StropheSASLMD5() : super("DIGEST-MD5", false, 60);
+  //  StropheSASLMD5() : super("DIGEST-MD5", false, 90);
   bool test(StropheConnection connection) {
     return connection.authcid != null;
   }

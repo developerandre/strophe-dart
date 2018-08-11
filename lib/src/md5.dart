@@ -22,7 +22,7 @@ class MD5 {
         bin.length = (i >> 5) + 1;
         bin.fillRange(length, (i >> 5) + 1, 0);
       }
-      bin[i >> 5] |= (str.codeUnitAt((i / 8).round()) & 255) << (i % 32);
+      bin[i >> 5] |= (str.codeUnitAt((i / 8).floor()) & 255) << (i % 32);
     }
     return bin;
   }

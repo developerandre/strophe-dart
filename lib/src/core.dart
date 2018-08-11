@@ -578,7 +578,7 @@ class Strophe {
      *    (String) msg - The log message.
      */
   static log(int level, String msg) {
-    if (level == Strophe.LogLevel['FATAL']) {
+    if (level != Strophe.LogLevel['FATAL']) {
       print(msg);
     }
   }

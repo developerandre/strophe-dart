@@ -78,6 +78,7 @@ class StropheWebSocket extends ServiceType {
     if (bodyWrapNode is xml.XmlDocument)
       bodyWrap = bodyWrapNode.rootElement;
     else if (bodyWrapNode is xml.XmlElement) bodyWrap = bodyWrapNode;
+
     if (bodyWrap.getAttribute("xmlns") == Strophe.NS['STREAM']) {
       errors = bodyWrap.findAllElements("error");
     } else {
@@ -152,7 +153,6 @@ class StropheWebSocket extends ServiceType {
   _connect() {
     // Ensure that there is no open WebSocket from a previous Connection.
     this._disconnect();
-
     if (this.socketListen == null || this.socket == null) {
       // Create the new WebSocket
       WebSocket.connect(this._conn.service, protocols: ['xmpp'])
@@ -217,7 +217,6 @@ class StropheWebSocket extends ServiceType {
       this._conn.doDisconnect();
       return false;
     }
-
     return true;
   }
 
@@ -312,7 +311,6 @@ class StropheWebSocket extends ServiceType {
   }
 
   void _doDisconnect() {
-    Strophe.info("WebSockets _doDisconnect was called");
     this._closeSocket();
   }
 
@@ -488,7 +486,6 @@ class StropheWebSocket extends ServiceType {
       data = this._streamWrap(message);
       elem = xml.parse(data);
     }
-
     if (this._checkStreamError(elem, Strophe.Status['ERROR'])) {
       return;
     }
@@ -504,7 +501,6 @@ class StropheWebSocket extends ServiceType {
       // wait for the </stream:stream> tag before we close the connection
       return;
     }
-    print('elem $elem');
     this._conn.dataRecv(elem.rootElement, message);
   }
 
@@ -514,7 +510,6 @@ class StropheWebSocket extends ServiceType {
      * The opening stream tag is sent here.
      */
   _onOpen() {
-    Strophe.info("Websocket open");
     StanzaBuilder start = this._buildStream();
     this._conn.xmlOutput(start.tree());
 
