@@ -1680,16 +1680,16 @@ class StropheConnection {
       StanzaBuilder pres;
       this.disconnecting = true;
       if (this.authenticated) {
-        pres = Strophe.$pres(
-            {'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
+        pres = Strophe
+            .$pres({'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
       }
       // setup timeout handler
       this._disconnectTimeout =
           this._addSysTimedHandler(3000, this._onDisconnectTimeout);
       this._proto.disconnect(pres?.tree());
     } else {
-      Strophe.info(
-          "Disconnect was called before Strophe connected to the server");
+      Strophe
+          .info("Disconnect was called before Strophe connected to the server");
       this._proto.abortAllRequests();
       this._doDisconnect();
     }
@@ -2041,7 +2041,8 @@ class StropheConnection {
       // Fall back to legacy authentication
       this._changeConnectStatus(Strophe.Status['AUTHENTICATING'], null);
       this._addSysHandler(this._auth1Cb, null, null, null, "_auth_1");
-      this.send(Strophe.$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
+      this.send(Strophe
+          .$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
           .c("query", {'xmlns': Strophe.NS['AUTH']})
           .c("username", {})
           .t(Strophe.getNodeFromJid(this.jid))
@@ -2106,7 +2107,8 @@ class StropheConnection {
   /* jshint unused:false */
   _auth1Cb(elem) {
     // build plaintext auth iq
-    StanzaBuilder iq = Strophe.$iq({'type': "set", 'id': "_auth_2"})
+    StanzaBuilder iq = Strophe
+        .$iq({'type': "set", 'id': "_auth_2"})
         .c('query', {'xmlns': Strophe.NS['AUTH']})
         .c('username', {})
         .t(Strophe.getNodeFromJid(this.jid))
@@ -2232,14 +2234,15 @@ class StropheConnection {
 
       String resource = Strophe.getResourceFromJid(this.jid);
       if (resource != null && resource.isNotEmpty) {
-        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
+        this.send(Strophe
+            .$iq({'type': "set", 'id': "_bind_auth_2"})
             .c('bind', {"xmlns": Strophe.NS['BIND']})
             .c('resource', {})
             .t(resource)
             .tree());
       } else {
-        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
-            .c('bind', {'xmlns': Strophe.NS['BIND']}).tree());
+        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"}).c(
+            'bind', {'xmlns': Strophe.NS['BIND']}).tree());
       }
     }
     return false;
@@ -2277,8 +2280,8 @@ class StropheConnection {
         if (this.doSession) {
           this._addSysHandler(
               this._saslSessionCb, null, null, null, "_session_auth_2");
-          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"})
-              .c('session', {'xmlns': Strophe.NS['SESSION']}).tree());
+          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"}).c(
+              'session', {'xmlns': Strophe.NS['SESSION']}).tree());
         } else {
           this.authenticated = true;
           this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
@@ -2758,7 +2761,7 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
 class StropheSASLMD5 extends StropheSASLMechanism {
   static bool first = false;
   StropheSASLMD5() : super("DIGEST-MD5", false, 60);
-  //  StropheSASLMD5() : super("DIGEST-MD5", false, 90);
+  //StropheSASLMD5() : super("DIGEST-MD5", false, 90);
   bool test(StropheConnection connection) {
     return connection.authcid != null;
   }
@@ -2775,41 +2778,34 @@ class StropheSASLMD5 extends StropheSASLMechanism {
       [String challenge, String testCnonce]) async {
     if (first) return "";
     if (challenge == null) challenge = '';
-    if (testCnonce == null) testCnonce = '';
+    //if (testCnonce == null) testCnonce = '';
     RegExp attribMatch = new RegExp(r'([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)');
     String cnonce = testCnonce ??
-        MD5.hexdigest(new Random().nextInt(1234567890).toString());
+        await MD5
+            .hexdigest((new Random().nextDouble() * 1234567890).toString());
     String realm = "";
     String host;
     String nonce = "";
     String qop = "";
-    List<Match> matches;
-
+    Match matches;
     while (attribMatch.hasMatch(challenge)) {
-      matches = attribMatch.allMatches(challenge).toList();
-      challenge = challenge.replaceAll(matches[0].group(0), "");
-      String match2 = matches[2]
-          .group(0)
-          .replaceAllMapped(new RegExp(r'^"(.+)"$'), (Match c) {
-        return c.group(0);
-      });
-      switch (matches[1].group(0)) {
+      matches = attribMatch.firstMatch(challenge);
+      challenge = challenge.replaceAll(matches.group(0), "");
+      switch (matches.group(1)) {
         case "realm":
-          realm = match2; // matches[2].group(0);
+          realm = matches.group(2);
           break;
         case "nonce":
-          nonce = match2; // matches[2].group(0);
+          nonce = matches.group(2);
           break;
         case "qop":
-          qop = match2; // matches[2].group(0);
-          Strophe.info("qop: $qop");
+          qop = matches.group(2);
           break;
         case "host":
-          host = match2; // matches[2].group(0);
+          host = matches.group(2);
           break;
       }
     }
-
     String digestUri = connection.servtype + "/" + connection.domain;
     if (host != null) {
       digestUri = digestUri + "/" + host;
@@ -2839,6 +2835,7 @@ class StropheSASLMD5 extends StropheSASLMechanism {
             await MD5.hexdigest(a2)) +
         ",";
     responseText += 'qop=auth';
+    print(responseText);
     first = true;
     return responseText;
   }

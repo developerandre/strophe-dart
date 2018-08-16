@@ -1,87 +1,72 @@
 import 'dart:async';
 
+import 'package:strophe/src/utils.dart';
+
 class SHA1 {
   static const mask32 = 0xFFFFFFFF;
-  static Future<List<int>> core_sha1(List<int> x, int len) async {
-    /* append padding */
-    if ((x.length <= (len >> 5))) {
-      x.length = (len >> 5) + 1;
-      x[len >> 5] = 0x80 << (24 - len % 32);
-    } else
-      x[len >> 5] |= 0x80 << (24 - len % 32);
-    int length = x.length;
-    x.length = ((((len + 64) >> 9) << 4) + 14) + 1;
-    x.fillRange(length, ((((len + 64) >> 9) << 4) + 14) + 1, 0);
-    x.add(len);
-    //x.add(0);
-    //x[((len + 64 >> 9) << 4) + 15] = len;
+  static Future<List<int>> core_sha1(List<int> chunk, int len) async {
+    List<int> digest = List<int>(5);
+    digest[0] = 0x67452301;
+    digest[1] = 0xEFCDAB89;
+    digest[2] = 0x98BADCFE;
+    digest[3] = 0x10325476;
+    digest[4] = 0xC3D2E1F0;
 
-    List w = new List(80);
-    int a = 1732584193;
-    int b = -271733879;
-    int c = -1732584194;
-    int d = 271733878;
-    int e = -1009589776;
+    int a = digest[0];
+    int b = digest[1];
+    int c = digest[2];
+    int d = digest[3];
+    int e = digest[4];
 
-    int j, t, olda, oldb, oldc, oldd, olde;
-    for (int i = 0; i < x.length; i += 16) {
-      olda = a;
-      oldb = b;
-      oldc = c;
-      oldd = d;
-      olde = e;
-
-      for (j = 0; j < 80; j++) {
-        if (j < 16) {
-          w[j] = x[i + j];
+    List<int> _extended = List<int>(80);
+    int y;
+    for (int i = 0; i < 80; i++) {
+      if (i < 16) {
+        if (chunk.length > i) {
+          y = chunk[i];
         } else {
-          w[j] = rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1);
+          y = 0;
         }
-        t = await safe_add(await safe_add(await rol(a, 5), sha1_ft(j, b, c, d)),
-            await safe_add(await safe_add(e, w[j]), sha1_kt(j)));
-        e = d;
-        d = c;
-        c = await rol(b, 30);
-        b = a;
-        a = t;
+        _extended[i] = y;
+      } else {
+        _extended[i] = rotl32(
+            _extended[i - 3] ^
+                _extended[i - 8] ^
+                _extended[i - 14] ^
+                _extended[i - 16],
+            1);
       }
 
-      a = await safe_add(a, olda);
-      b = await safe_add(b, oldb);
-      c = await safe_add(c, oldc);
-      d = await safe_add(d, oldd);
-      e = await safe_add(e, olde);
+      var newA = add32(add32(rotl32(a, 5), e), _extended[i]);
+      if (i < 20) {
+        newA = add32(add32(newA, (b & c) | (~b & d)), 0x5A827999);
+      } else if (i < 40) {
+        newA = add32(add32(newA, (b ^ c ^ d)), 0x6ED9EBA1);
+      } else if (i < 60) {
+        newA = add32(add32(newA, (b & c) | (b & d) | (c & d)), 0x8F1BBCDC);
+      } else {
+        newA = add32(add32(newA, b ^ c ^ d), 0xCA62C1D6);
+      }
+
+      e = d;
+      d = c;
+      c = rotl32(b, 30);
+      b = a;
+      a = newA & mask32;
     }
-    return [a, b, c, d, e];
+
+    digest[0] = add32(a, digest[0]);
+    digest[1] = add32(b, digest[1]);
+    digest[2] = add32(c, digest[2]);
+    digest[3] = add32(d, digest[3]);
+    digest[4] = add32(e, digest[4]);
+    return digest;
   }
 
 /*
  * Perform the appropriate triplet combination function for the current
  * iteration
- */
-  static int sha1_ft(int t, int b, int c, int d) {
-    if (t < 20) {
-      return (b & c) | ((~b) & d);
-    }
-    if (t < 40) {
-      return b ^ c ^ d;
-    }
-    if (t < 60) {
-      return (b & c) | (b & d) | (c & d);
-    }
-    return b ^ c ^ d;
-  }
 
-/*
- * Determine the appropriate additive constant for the current iteration
- */
-  static int sha1_kt(num t) {
-    return (t < 20)
-        ? 1518500249
-        : (t < 40) ? 1859775393 : (t < 60) ? -1894007588 : -899497514;
-  }
-
-/*
  * Calculate the HMAC-SHA1 of a key and some data
  */
   static Future<List<int>> core_hmac_sha1(String key, String data) async {
@@ -97,20 +82,12 @@ class SHA1 {
       ipad[i] = value ^ 0x36363636;
       opad[i] = value ^ 0x5C5C5C5C;
     }
-    List<int> hash = await core_sha1(
-        new List.from(ipad)..addAll(await str2binb(data)),
-        512 + data.length * 8);
-    return core_sha1(new List.from(opad)..addAll(hash), 512 + 160);
-  }
-
-/*
- * Add integers, wrapping at 2^32. This uses 16-bit operations internally
- * to work around bugs in some JS interpreters.
- */
-  static Future<int> safe_add(int x, int y) async {
-    var lsw = (x & 0xFFFF) + (y & 0xFFFF);
-    var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
-    return (msw << 16) | (lsw & 0xFFFF);
+    List<int> pad = new List<int>.from(ipad);
+    pad.addAll(await str2binb(data));
+    List<int> hash = await core_sha1(pad, 512 + data.length * 8);
+    List<int> pod = new List.from(opad);
+    pod.addAll(hash);
+    return core_sha1(pod, 512 + 160);
   }
 
   static int _zeroFillRightShift(int n, int amount) {
@@ -139,7 +116,7 @@ class SHA1 {
     int index;
     for (int i = 0; i < str.length * 8; i += 8) {
       index = i >> 5;
-      if (bin.length + 1 < index) {
+      if (bin.length < index + 1) {
         bin.length = index + 1;
         bin.fillRange(bin.length, index + 1, 0);
       }
