@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:http/http.dart' as http;
+import 'dart:io' show HttpClient;
 import 'package:strophe/src/core.dart';
 import 'package:strophe/src/enums.dart';
 import 'package:strophe/src/sessionstorage.dart';
@@ -61,7 +61,7 @@ class StropheBosh extends ServiceType {
      *  This will enable stripping of the body tag in both
      *  <Strophe.Connection.xmlInput> and <Strophe.Connection.xmlOutput>.
      */
-  String strip = null;
+  String strip;
 
   /** PrivateFunction: _buildBody
      *  _Private_ helper function to generate the <body/> wrapper for BOSH.
@@ -714,11 +714,12 @@ class StropheBosh extends ServiceType {
   _sendFunc(StropheRequest req) {
     String contentType;
     Map<String, dynamic> map;
-    http.Request request;
+    var request;
+    HttpClient httpClient = HttpClient();
     try {
       contentType =
           this._conn.options['contentType'] ?? "text/xml; charset=utf-8";
-      request = new http.Request("POST", Uri.parse(this._conn.service));
+      request = httpClient.getUrl(Uri.parse(this._conn.service));
       request.persistentConnection = this._conn.options['sync'] ? false : true;
       map = {"Content-Type": contentType};
       if (this._conn.options['withCredentials']) {
@@ -743,9 +744,9 @@ class StropheBosh extends ServiceType {
     }
 
     request.bodyFields = map;
-    req.xhr.send(request).then((http.StreamedResponse response) {
+    /*  req.xhr.send(request).then((http.StreamedResponse response) {
       req.response = response as http.Response;
-    }).catchError(() {});
+    }).catchError(() {}); */
   }
 
   /** PrivateFunction: _removeRequest
@@ -932,8 +933,10 @@ class StropheRequest {
 
   int dead;
 
-  http.Client xhr;
-  http.Response response;
+  //http.Client
+  var xhr;
+  //http.Response
+  var response;
 
   StropheRequest(xml.XmlElement elem, Function func, String rid, [int sends]) {
     this.id = ++Strophe.requestId;
@@ -1007,7 +1010,7 @@ class StropheRequest {
      *  Returns:
      *    A new XMLHttpRequest.
      */
-  http.Client _newXHR() {
-    return new http.Client();
+  _newXHR() {
+    //return new http.Client();
   }
 }

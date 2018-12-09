@@ -142,7 +142,7 @@ class StanzaBuilder {
   }
 
   /** Function: up
-     *  Make the current parent element the new current element.
+     *  Make the current parent element the  current element.
      *
      *  This function is often used after c() to traverse back up the tree.
      *  For example, to add two children to the same element
@@ -157,7 +157,7 @@ class StanzaBuilder {
   }
 
   /** Function: root
-     *  Make the root element the new current element.
+     *  Make the root element the  current element.
      *
      *  When at a deeply nested element in the tree, this function can be used
      *  to jump back to the root of the tree, instead of having to repeatedly
@@ -199,14 +199,14 @@ class StanzaBuilder {
             .nodeTree
             .firstChild
             .attributes
-            .add(new xml.XmlAttribute(new xml.XmlName.fromString(key), value));
+            .add(xml.XmlAttribute(xml.XmlName.fromString(key), value));
       }
     });
     return this;
   }
 
   /** Function: c
-     *  Add a child to the current element and make it the new current
+     *  Add a child to the current element and make it the  current
      *  element.
      *
      *  This function moves the current element pointer to the child,
@@ -237,7 +237,7 @@ class StanzaBuilder {
   }
 
   /** Function: cnode
-     *  Add a child to the current element and make it the new current
+     *  Add a child to the current element and make it the  current
      *  element.
      *
      *  This function is the same as c() except this instead of using a
@@ -264,7 +264,7 @@ class StanzaBuilder {
   /** Function: t
      *  Add a child text element.
      *
-     *  This *does not* make the child the new current element since there
+     *  This *does not* make the child the  current element since there
      *  are no children of text elements.
      *
      *  Parameters:
@@ -278,14 +278,14 @@ class StanzaBuilder {
     for (int i = 1; i < this.node.length; i++) {
       currentNode = currentNode.children[this.node[i]];
     }
-    currentNode.children.add(Strophe.copyElement(new xml.XmlText(text ?? '')));
+    currentNode.children.add(Strophe.copyElement(xml.XmlText(text ?? '')));
     return this;
   }
 
   /** Function: h
      *  Replace current element contents with the HTML passed in.
      *
-     *  This *does not* make the child the new current element
+     *  This *does not* make the child the  current element
      *
      *  Parameters:
      *    (String) html - The html to insert as contents of current element.
@@ -462,7 +462,7 @@ class StanzaTimedHandler {
   StanzaTimedHandler(int period, Function handler) {
     this.period = period;
     this.handler = handler;
-    this.lastCalled = new DateTime.now().millisecondsSinceEpoch;
+    this.lastCalled = DateTime.now().millisecondsSinceEpoch;
   }
   /** PrivateFunction: run
      *  Run the callback for the Strophe.TimedHandler.
@@ -472,7 +472,7 @@ class StanzaTimedHandler {
      *      otherwise.
      */
   bool run() {
-    this.lastCalled = new DateTime.now().millisecondsSinceEpoch;
+    this.lastCalled = DateTime.now().millisecondsSinceEpoch;
     return this.handler();
   }
 
@@ -480,7 +480,7 @@ class StanzaTimedHandler {
      *  Reset the last called time for the Strophe.TimedHandler.
      */
   void reset() {
-    this.lastCalled = new DateTime.now().millisecondsSinceEpoch;
+    this.lastCalled = DateTime.now().millisecondsSinceEpoch;
   }
 
   /** PrivateFunction: toString
@@ -705,7 +705,7 @@ class StropheConnection {
     this.maxRetries = 5;
     // Call onIdle callback every 1/10th of a second
     // XXX: setTimeout should be called only with function expressions (23974bc1)
-    this._idleTimeout = new Timer(new Duration(milliseconds: 100), () {
+    this._idleTimeout = Timer(Duration(milliseconds: 100), () {
       this._onIdle();
     });
 
@@ -822,9 +822,8 @@ class StropheConnection {
       }
     };
     this._authenticate = (List<StropheSASLMechanism> matched) {
-      this._attemptSASLAuth(matched).then((bool result) {
-        if (result != true) this._attemptLegacyAuth();
-      });
+      bool result = this._attemptSASLAuth(matched);
+      if (result != true) this._attemptLegacyAuth();
     };
   }
 
@@ -903,7 +902,7 @@ class StropheConnection {
      *
      *  Suffixes are used to make debugging easier when reading the stream
      *  data, and their use is recommended.  The counter resets to 0 for
-     *  every new connection for the same reason.  For connections to the
+     *  every  connection for the same reason.  For connections to the
      *  same server this authenticate the same way, all the ids should be
      *  the same, which makes it easy to see changes.  This is useful for
      *  automated testing as well.
@@ -917,8 +916,8 @@ class StropheConnection {
 
   String getUniqueId([String suffix]) {
     String uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-        .replaceAllMapped(new RegExp(r"[xy]"), (Match c) {
-      int r = new Random().nextInt(16) | 0;
+        .replaceAllMapped(RegExp(r"[xy]"), (Match c) {
+      int r = Random().nextInt(16) | 0;
       int v = c.group(0) == 'x' ? r : r & 0x3 | 0x8;
       return v.toRadixString(16);
     });
@@ -1091,7 +1090,7 @@ class StropheConnection {
                  *  Attempt to restore a cached BOSH session.
                  *
                  *  This function is only useful in conjunction with providing the
-                 *  "keepalive":true option when instantiating a new Strophe.Connection.
+                 *  "keepalive":true option when instantiating a  Strophe.Connection.
                  *
                  *  When "keepalive" is set to true, Strophe will cache the BOSH tokens
                  *  RID (Request ID) and SID (Session ID) and then when this function is
@@ -1258,7 +1257,7 @@ class StropheConnection {
   /* jshint unused:true */
 
   /** Function: nextValidRid
-                                         *  User overrideable function this receives the new valid rid.
+                                         *  User overrideable function this receives the  valid rid.
                                          *
                                          *  The default function does nothing. User code can override this with
                                          *  > Strophe.Connection.nextValidRid = function (rid) {
@@ -1349,8 +1348,7 @@ class StropheConnection {
     if (id == null || id.isEmpty) {
       // inject id if not found
       id = this.getUniqueId("sendPresence");
-      elem.attributes
-          .add(new xml.XmlAttribute(new xml.XmlName.fromString('id'), id));
+      elem.attributes.add(xml.XmlAttribute(xml.XmlName.fromString('id'), id));
     }
 
     if (callback == null || errback == null) {
@@ -1411,8 +1409,7 @@ class StropheConnection {
     if (id == null) {
       // inject id if not found
       id = this.getUniqueId("sendIQ");
-      elem.attributes
-          .add(new xml.XmlAttribute(new xml.XmlName.fromString('id'), id));
+      elem.attributes.add(xml.XmlAttribute(xml.XmlName.fromString('id'), id));
     }
 
     if (callback != null || errback != null) {
@@ -1477,7 +1474,7 @@ class StropheConnection {
     this._data.add("restart");
     this._proto.sendRestart();
     // XXX: setTimeout should be called only with function expressions (23974bc1)
-    this._idleTimeout = new Timer(new Duration(milliseconds: 100), () {
+    this._idleTimeout = Timer(Duration(milliseconds: 100), () {
       this._onIdle();
     });
   }
@@ -1680,16 +1677,16 @@ class StropheConnection {
       StanzaBuilder pres;
       this.disconnecting = true;
       if (this.authenticated) {
-        pres = Strophe
-            .$pres({'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
+        pres = Strophe.$pres(
+            {'xmlns': Strophe.NS['CLIENT'], 'type': 'unavailable'});
       }
       // setup timeout handler
       this._disconnectTimeout =
           this._addSysTimedHandler(3000, this._onDisconnectTimeout);
       this._proto.disconnect(pres?.tree());
     } else {
-      Strophe
-          .info("Disconnect was called before Strophe connected to the server");
+      Strophe.info(
+          "Disconnect was called before Strophe connected to the server");
       this._proto.abortAllRequests();
       this._doDisconnect();
     }
@@ -1700,7 +1697,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                        *  callback are notified of connection status changes.
                                                                                                                                                                                                                                                                                                                                                                        *
                                                                                                                                                                                                                                                                                                                                                                        *  Parameters:
-                                                                                                                                                                                                                                                                                                                                                                       *    (Integer) status - the new connection status, one of the values
+                                                                                                                                                                                                                                                                                                                                                                       *    (Integer) status - the  connection status, one of the values
                                                                                                                                                                                                                                                                                                                                                                        *      in Strophe.Status
                                                                                                                                                                                                                                                                                                                                                                        *    (String) condition - the error condition or null
                                                                                                                                                                                                                                                                                                                                                                        *    (XMLElement) elem - The triggering stanza.
@@ -1994,7 +1991,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *          valid SASL mechanism was found with which authentication could be
                                                                                                                                                                                                                                                                                                                                                                                                              *          started.
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  Future<bool> _attemptSASLAuth(List<StropheSASLMechanism> mechanisms) async {
+  bool _attemptSASLAuth(List<StropheSASLMechanism> mechanisms) {
     mechanisms = this.sortMechanismsByPriority(mechanisms ?? []);
 
     bool mechanismFound = false;
@@ -2015,7 +2012,7 @@ class StropheConnection {
       StanzaBuilder requestAuthExchange = Strophe.$build("auth",
           {'xmlns': Strophe.NS['SASL'], 'mechanism': this._saslMechanism.name});
       if (this._saslMechanism.isClientFirst) {
-        String response = await this._saslMechanism.onChallenge(this, null);
+        String response = this._saslMechanism.onChallenge(this, null);
         requestAuthExchange.t(base64.encode(response.runes.toList()));
       }
       this.send(requestAuthExchange.tree());
@@ -2041,8 +2038,7 @@ class StropheConnection {
       // Fall back to legacy authentication
       this._changeConnectStatus(Strophe.Status['AUTHENTICATING'], null);
       this._addSysHandler(this._auth1Cb, null, null, null, "_auth_1");
-      this.send(Strophe
-          .$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
+      this.send(Strophe.$iq({'type': "get", 'to': this.domain, 'id': "_auth_1"})
           .c("query", {'xmlns': Strophe.NS['AUTH']})
           .c("username", {})
           .t(Strophe.getNodeFromJid(this.jid))
@@ -2077,10 +2073,10 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                              *  _Private_ handler for the SASL challenge
                                                                                                                                                                                                                                                                                                                                                                                                              *authenticate
                                                                                                                                                                                                                                                                                                                                                                                                              */
-  Future<bool> _saslChallengeCb(elem) async {
+  bool _saslChallengeCb(elem) {
     String challenge =
-        new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
-    String response = await this._saslMechanism.onChallenge(this, challenge);
+        String.fromCharCodes(base64.decode(Strophe.getText(elem)));
+    String response = this._saslMechanism.onChallenge(this, challenge);
     StanzaBuilder stanza =
         Strophe.$build('response', {'xmlns': Strophe.NS['SASL']});
     if (response != "") {
@@ -2107,8 +2103,7 @@ class StropheConnection {
   /* jshint unused:false */
   _auth1Cb(elem) {
     // build plaintext auth iq
-    StanzaBuilder iq = Strophe
-        .$iq({'type': "set", 'id': "_auth_2"})
+    StanzaBuilder iq = Strophe.$iq({'type': "set", 'id': "_auth_2"})
         .c('query', {'xmlns': Strophe.NS['AUTH']})
         .c('username', {})
         .t(Strophe.getNodeFromJid(this.jid))
@@ -2145,8 +2140,8 @@ class StropheConnection {
     if (saslData != null && saslData.isNotEmpty) {
       String serverSignature;
       String success =
-          new String.fromCharCodes(base64.decode(Strophe.getText(elem)));
-      RegExp attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
+          String.fromCharCodes(base64.decode(Strophe.getText(elem)));
+      RegExp attribMatch = RegExp(r"([a-z]+)=([^,]+)(,|$)");
       Match matches = attribMatch.firstMatch(success);
       if (matches.group(1) == "v") {
         serverSignature = matches.group(2);
@@ -2234,15 +2229,14 @@ class StropheConnection {
 
       String resource = Strophe.getResourceFromJid(this.jid);
       if (resource != null && resource.isNotEmpty) {
-        this.send(Strophe
-            .$iq({'type': "set", 'id': "_bind_auth_2"})
+        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
             .c('bind', {"xmlns": Strophe.NS['BIND']})
             .c('resource', {})
             .t(resource)
             .tree());
       } else {
-        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"}).c(
-            'bind', {'xmlns': Strophe.NS['BIND']}).tree());
+        this.send(Strophe.$iq({'type': "set", 'id': "_bind_auth_2"})
+            .c('bind', {'xmlns': Strophe.NS['BIND']}).tree());
       }
     }
     return false;
@@ -2280,8 +2274,8 @@ class StropheConnection {
         if (this.doSession) {
           this._addSysHandler(
               this._saslSessionCb, null, null, null, "_session_auth_2");
-          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"}).c(
-              'session', {'xmlns': Strophe.NS['SESSION']}).tree());
+          this.send(Strophe.$iq({'type': "set", 'id': "_session_auth_2"})
+              .c('session', {'xmlns': Strophe.NS['SESSION']}).tree());
         } else {
           this.authenticated = true;
           this._changeConnectStatus(Strophe.Status['CONNECTED'], null);
@@ -2467,7 +2461,7 @@ class StropheConnection {
     }
 
     // call ready timed handlers
-    int now = new DateTime.now().millisecondsSinceEpoch;
+    int now = DateTime.now().millisecondsSinceEpoch;
     newList = [];
     for (i = 0; i < this.timedHandlers.length; i++) {
       thand = this.timedHandlers[i];
@@ -2490,7 +2484,7 @@ class StropheConnection {
     // reactivate the timer only if connected
     if (this.connected) {
       // XXX: setTimeout should be called only with function expressions (23974bc1)
-      this._idleTimeout = new Timer(new Duration(milliseconds: 100), () {
+      this._idleTimeout = Timer(Duration(milliseconds: 100), () {
         this._onIdle();
       });
     }
@@ -2527,7 +2521,7 @@ class StropheConnection {
                                                                                                                                                                                                                                                                                                                                                                                                                                  *    (Number) priority - Priority.
                                                                                                                                                                                                                                                                                                                                                                                                                                  *
                                                                                                                                                                                                                                                                                                                                                                                                                                  *  Returns:
-                                                                                                                                                                                                                                                                                                                                                                                                                                 *    A new Strophe.SASLMechanism object.
+                                                                                                                                                                                                                                                                                                                                                                                                                                 *    A  Strophe.SASLMechanism object.
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 class StropheSASLMechanism {
   String name;
@@ -2593,7 +2587,7 @@ class StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                    *    (String) Mechanism response.
                                                                                                                                                                                                                                                                                                                                                                                                                                    */
   /* jshint unused:false */
-  Future<String> onChallenge(StropheConnection connection,
+  String onChallenge(StropheConnection connection,
       [String challenge, String testCnonce]) {
     throw {'message': "You should implement challenge handling!"};
   }
@@ -2641,14 +2635,14 @@ class StropheSASLAnonymous extends StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 
 class StropheSASLPlain extends StropheSASLMechanism {
-  //StropheSASLPlain() : super("PLAIN", true, 50);
-  StropheSASLPlain() : super("PLAIN", true, 90);
+  StropheSASLPlain() : super("PLAIN", true, 50);
+  //StropheSASLPlain() : super("PLAIN", true, 90);
   bool test(StropheConnection connection) {
     return connection.authcid != null;
   }
 
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, dynamic testCnonce]) {
     String authStr = connection.authzid;
     authStr = authStr + "\u0000";
     authStr = authStr + connection.authcid;
@@ -2668,13 +2662,13 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     return connection.authcid != null;
   }
 
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, String testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, String testCnonce]) {
     if (first && challenge != null && challenge.isNotEmpty)
-      return await this._onChallenge(connection, challenge);
-    Random random = new Random();
+      return this._onChallenge(connection, challenge);
+    Random random = Random();
     String cnonce = testCnonce ??
-        await MD5.hexdigest((random.nextDouble() * 1234567890).toString());
+        MD5.hexdigest((random.nextDouble() * 1234567890).toString());
     String authStr = "n=" + Utils.utf16to8(connection.authcid);
     authStr += ",r=";
     authStr += cnonce;
@@ -2687,8 +2681,7 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
     return authStr;
   }
 
-  Future<String> _onChallenge(
-      StropheConnection connection, String challenge) async {
+  String _onChallenge(StropheConnection connection, String challenge) {
     String nonce, salt, iter;
     List<int> hi, U, uOld;
     String serverKey, pass;
@@ -2699,7 +2692,7 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
         challenge +
         ",";
     String cnonce = connection._saslData['cnonce'];
-    RegExp attribMatch = new RegExp(r"([a-z]+)=([^,]+)(,|$)");
+    RegExp attribMatch = RegExp(r"([a-z]+)=([^,]+)(,|$)");
     while (attribMatch.hasMatch(challenge)) {
       Match match = attribMatch.firstMatch(challenge);
       challenge = challenge.replaceAll(match.group(0), "");
@@ -2715,7 +2708,7 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
           break;
       }
     }
-
+    print("$cnonce ,$nonce $authMessage");
     if (nonce.substring(0, cnonce.length) != cnonce) {
       connection._saslData = {};
       return connection._saslFailureCb();
@@ -2723,34 +2716,36 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
 
     responseText += "r=" + nonce;
     authMessage += responseText;
-    salt = new String.fromCharCodes(base64.decode(salt));
+    salt = String.fromCharCodes(base64.decode(salt));
     salt += "\x00\x00\x00\x01";
     pass = Utils.utf16to8(connection.pass);
-    hi = await SHA1.core_hmac_sha1(pass, salt);
-    uOld = hi;
+    print("pass $pass");
+    hi = uOld = SHA1.coreHmacSha1(pass, salt);
     String s;
-    int parseInt = int.parse(iter, radix: 10);
+    int parseInt = int.tryParse(iter, radix: 10) ?? 0;
+    print("parseInt $parseInt");
     for (int i = 1; i < parseInt; i++) {
-      s = await SHA1.binb2str(uOld);
-      U = await SHA1.core_hmac_sha1(pass, s);
-      for (int k = 0; k < 5; k++) {
+      s = SHA1.binb2str(uOld);
+      U = SHA1.coreHmacSha1(pass, s);
+      for (int k = 0; k < 20; k++) {
         hi[k] ^= U[k];
       }
       uOld = U;
     }
 
-    String hiStr = await SHA1.binb2str(hi);
-    clientKey = await SHA1.core_hmac_sha1(hiStr, "Client Key");
-    serverKey = await SHA1.str_hmac_sha1(hiStr, "Server Key");
-    clientSignature = await SHA1.core_hmac_sha1(
-        await SHA1.str_sha1(await SHA1.binb2str(clientKey)), authMessage);
+    String hiStr = SHA1.binb2str(hi);
+    clientKey = SHA1.coreHmacSha1(hiStr, "Client Key");
+    serverKey = SHA1.strHmacSha1(hiStr, "Server Key");
+    clientSignature =
+        SHA1.coreHmacSha1(SHA1.strSha1(SHA1.binb2str(clientKey)), authMessage);
     connection._saslData["server-signature"] =
-        await SHA1.b64_hmac_sha1(serverKey, authMessage);
+        SHA1.b64HmacSha1(serverKey, authMessage);
+    print("$hi $hiStr ${clientKey.length} ${clientSignature.length}");
     for (int k = 0; k < 5; k++) {
       clientKey[k] ^= clientSignature[k];
     }
-    String binb2str = await SHA1.binb2str(clientKey);
-    responseText += ",p=" + base64.encode(binb2str.runes.toList());
+    responseText += ",p=" + SHA1.binb2b64(clientKey);
+    print("responseText $responseText");
     return responseText;
   }
 }
@@ -2760,29 +2755,26 @@ class StropheSASLSHA1 extends StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 class StropheSASLMD5 extends StropheSASLMechanism {
   static bool first = false;
-  StropheSASLMD5() : super("DIGEST-MD5", false, 60);
-  //StropheSASLMD5() : super("DIGEST-MD5", false, 90);
+  //StropheSASLMD5() : super("DIGEST-MD5", false, 60);
+  StropheSASLMD5() : super("DIGEST-MD5", false, 90);
   bool test(StropheConnection connection) {
     return connection.authcid != null;
   }
 
   String _quote(String str) {
     return '"' +
-        str
-            .replaceAll(new RegExp(r"\\"), "\\\\")
-            .replaceAll(new RegExp(r'"'), '\\"') +
+        str.replaceAll(RegExp(r"\\"), "\\\\").replaceAll(RegExp(r'"'), '\\"') +
         '"';
   }
 
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, String testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, String testCnonce]) {
     if (first) return "";
     if (challenge == null) challenge = '';
     //if (testCnonce == null) testCnonce = '';
-    RegExp attribMatch = new RegExp(r'([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)');
+    RegExp attribMatch = RegExp(r'([a-z]+)=("[^"]+"|[^,"]+)(?:,|$)');
     String cnonce = testCnonce ??
-        await MD5
-            .hexdigest((new Random().nextDouble() * 1234567890).toString());
+        MD5.hexdigest((Random().nextDouble() * 1234567890).toString());
     String realm = "";
     String host;
     String nonce = "";
@@ -2813,7 +2805,7 @@ class StropheSASLMD5 extends StropheSASLMechanism {
 
     String cred = Utils.utf16to8(
         connection.authcid + ":" + realm + ":" + this._connection.pass);
-    String a1 = await MD5.hash(cred) + ":" + nonce + ":" + cnonce;
+    String a1 = MD5.hash(cred) + ":" + nonce + ":" + cnonce;
     String a2 = 'AUTHENTICATE:' + digestUri;
 
     String responseText = "";
@@ -2826,13 +2818,13 @@ class StropheSASLMD5 extends StropheSASLMechanism {
     responseText += 'cnonce=' + this._quote(cnonce) + ',';
     responseText += 'digest-uri=' + this._quote(digestUri) + ',';
     responseText += 'response=' +
-        await MD5.hexdigest(await MD5.hexdigest(a1) +
+        MD5.hexdigest(MD5.hexdigest(a1) +
             ":" +
             nonce +
             ":00000001:" +
             cnonce +
             ":auth:" +
-            await MD5.hexdigest(a2)) +
+            MD5.hexdigest(a2)) +
         ",";
     responseText += 'qop=auth';
     print(responseText);
@@ -2850,8 +2842,8 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
     return connection.pass != null;
   }
 
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, dynamic testCnonce]) {
     String authStr = 'n,';
     if (connection.authcid != null) {
       authStr = authStr + 'a=' + connection.authzid;
@@ -2877,14 +2869,14 @@ class StropheSASLOAuthBearer extends StropheSASLMechanism {
                                                                                                                                                                                                                                                                                                                                                                                                                                  */
 class StropheSASLExternal extends StropheSASLMechanism {
   StropheSASLExternal() : super("EXTERNAL", true, 10);
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, dynamic testCnonce]) {
     /** According to XEP-178, an authzid SHOULD NOT be presented when the
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authcid contained or implied in the client certificate is the JID (i.e.
                                                                                                                                                                                                                                                                                                                                                                                                                                      * authzid) with which the user wants to log in as.
                                                                                                                                                                                                                                                                                                                                                                                                                                      *
                                                                                                                                                                                                                                                                                                                                                                                                                                      * To NOT send the authzid, the user should therefore set the authcid equal
-                                                                                                                                                                                                                                                                                                                                                                                                                                     * to the JID when instantiating a new Strophe.Connection object.
+                                                                                                                                                                                                                                                                                                                                                                                                                                     * to the JID when instantiating a  Strophe.Connection object.
                                                                                                                                                                                                                                                                                                                                                                                                                                      */
     return connection.authcid == connection.authzid ? '' : connection.authzid;
   }
@@ -2899,8 +2891,8 @@ class StropheSASLXOAuth2 extends StropheSASLMechanism {
     return connection.pass != null;
   }
 
-  Future<String> onChallenge(StropheConnection connection,
-      [String challenge, dynamic testCnonce]) async {
+  String onChallenge(StropheConnection connection,
+      [String challenge, dynamic testCnonce]) {
     String authStr = '\u0000';
     if (connection.authcid != null) {
       authStr = authStr + connection.authzid;

@@ -4,9 +4,10 @@ version: 0.0.5
 author: Andre_developer <andredeveloper10@gmail.com>
 homepage: https://github.com/developerandre/strophe-dart
 
-dependencies:
-  xml: ^3.0.0
-  http: ^0.11.3+17
+dependencies: 
+  xml: ^3.2.3
+  dio: ^1.0.9
+  crypto: ^2.0.6
   flutter:
     sdk: flutter
 
@@ -15,7 +16,7 @@ dev_dependencies:
     sdk: flutter
 
 environment:
-    sdk: ">=1.19.0 <=2.1.0"
+    sdk: ">=2.0.0-dev.68.0 <3.0.0"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec

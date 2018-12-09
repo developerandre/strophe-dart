@@ -3,10 +3,10 @@ import 'package:strophe/src/enums.dart';
 import 'package:strophe/src/plugins/plugins.dart';
 import 'package:xml/xml.dart' as xml;
 
-/**
- * Chat state notifications (XEP 0085) plugin
- * @see http://xmpp.org/extensions/xep-0085.html
- */
+///
+/// Chat state notifications (XEP 0085) plugin
+/// @see http://xmpp.org/extensions/xep-0085.html
+///
 class ChatStatesNotificationPlugin extends PluginClass {
   @override
   init(StropheConnection conn) {
@@ -91,7 +91,7 @@ class ChatStatesNotificationPlugin extends PluginClass {
   _sendNotification(String jid, String type, String notification) {
     if (type == null || type.isEmpty) type = 'chat';
 
-    this.connection.send(Strophe.$msg({'to': jid, 'type': type}).c(
-        notification, {'xmlns': Strophe.NS['CHATSTATES']}));
+    this.connection.send(Strophe.$msg({'to': jid, 'type': type})
+        .c(notification, {'xmlns': Strophe.NS['CHATSTATES']}));
   }
 }

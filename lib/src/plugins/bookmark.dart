@@ -13,18 +13,17 @@ class BookMarkPlugin extends PluginClass {
     Strophe.addNamespace('PUBSUB', 'http://jabber.org/protocol/pubsub');
   }
 
-  /**
-	 * Create private bookmark node.
-	 *
-	 * @param {function} [success] - Callback after success
-	 * @param {function} [error] - Callback after error
-	 */
+  ///
+  /// Create private bookmark node.
+  ///
+  /// @param {function} [success] - Callback after success
+  /// @param {function} [error] - Callback after error
+  ///
   bool createBookmarksNode([Function success, Function error]) {
     // We do this instead of using publish-options because this is not
     // mandatory to implement according to XEP-0060
     this.connection.sendIQ(
-        Strophe
-            .$iq({'type': 'set'})
+        Strophe.$iq({'type': 'set'})
             .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']})
             .c('create', {'node': Strophe.NS['BOOKMARKS']})
             .up()
@@ -66,11 +65,11 @@ class BookMarkPlugin extends PluginClass {
 	 */
   add(String roomJid, String alias,
       [String nick, bool autojoin = true, Function success, Function error]) {
-    StanzaBuilder stanza = Strophe
-        .$iq({'type': 'set'}).c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
-            'publish', {'node': Strophe.NS['BOOKMARKS']}).c('item', {
-      'id': 'current'
-    }).c('storage', {'xmlns': Strophe.NS['BOOKMARKS']});
+    StanzaBuilder stanza = Strophe.$iq({'type': 'set'})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('publish', {
+      'node': Strophe.NS['BOOKMARKS']
+    }).c('item', {'id': 'current'}).c(
+            'storage', {'xmlns': Strophe.NS['BOOKMARKS']});
 
     Function _bookmarkGroupChat = (bool bookmarkit) {
       if (bookmarkit) {
@@ -150,9 +149,9 @@ class BookMarkPlugin extends PluginClass {
 	 */
   get([Function success, Function error]) {
     this.connection.sendIQ(
-        Strophe.$iq({'type': 'get'}).c('pubsub', {
-          'xmlns': Strophe.NS['PUBSUB']
-        }).c('items', {'node': Strophe.NS['BOOKMARKS']}).tree(),
+        Strophe.$iq({'type': 'get'})
+            .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
+                'items', {'node': Strophe.NS['BOOKMARKS']}).tree(),
         success,
         error);
   }
@@ -168,11 +167,11 @@ class BookMarkPlugin extends PluginClass {
 	 * @param {function} [error] - Callback after error
 	 */
   delete(String roomJid, [Function success, Function error]) {
-    StanzaBuilder stanza = Strophe
-        .$iq({'type': 'set'}).c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
-            'publish', {'node': Strophe.NS['BOOKMARKS']}).c('item', {
-      'id': 'current'
-    }).c('storage', {'xmlns': Strophe.NS['BOOKMARKS']});
+    StanzaBuilder stanza = Strophe.$iq({'type': 'set'})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('publish', {
+      'node': Strophe.NS['BOOKMARKS']
+    }).c('item', {'id': 'current'}).c(
+            'storage', {'xmlns': Strophe.NS['BOOKMARKS']});
 
     this.get((xml.XmlElement s) {
       List<xml.XmlElement> confs = s.findAllElements('conference').toList();
@@ -214,11 +213,11 @@ class BookMarkPlugin extends PluginClass {
 	 */
   update(String roomJid, String alias,
       [String nick, bool autojoin = true, Function success, Function error]) {
-    StanzaBuilder stanza = Strophe
-        .$iq({'type': 'set'}).c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
-            'publish', {'node': Strophe.NS['BOOKMARKS']}).c('item', {
-      'id': 'current'
-    }).c('storage', {'xmlns': Strophe.NS['BOOKMARKS']});
+    StanzaBuilder stanza = Strophe.$iq({'type': 'set'})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('publish', {
+      'node': Strophe.NS['BOOKMARKS']
+    }).c('item', {'id': 'current'}).c(
+            'storage', {'xmlns': Strophe.NS['BOOKMARKS']});
 
     this.get((xml.XmlElement s) {
       List<xml.XmlElement> confs = s.findAllElements('conference').toList();

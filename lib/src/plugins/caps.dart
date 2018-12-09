@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:strophe/src/core.dart';
 import 'package:strophe/src/enums.dart';
 import 'package:strophe/src/plugins/plugins.dart';
@@ -30,12 +28,11 @@ class CapsPlugin extends PluginClass {
   }
 
   sendPres() {
-    createCapsNode().then((StanzaBuilder caps) {
-      return this.connection.send(Strophe.$pres().cnode(caps.tree()));
-    });
+    StanzaBuilder caps = createCapsNode();
+    return this.connection.send(Strophe.$pres().cnode(caps.tree()));
   }
 
-  Future<StanzaBuilder> createCapsNode() async {
+  StanzaBuilder createCapsNode() {
     String node;
     if (this.connection.disco.identities.length > 0) {
       node = this.connection.disco.identities[0]['name'] ?? "";
@@ -46,7 +43,7 @@ class CapsPlugin extends PluginClass {
       'xmlns': Strophe.NS['CAPS'],
       'hash': this._hash,
       'node': node,
-      'ver': await generateVerificationString()
+      'ver': generateVerificationString()
     });
   }
 
@@ -56,7 +53,7 @@ class CapsPlugin extends PluginClass {
     });
   }
 
-  generateVerificationString() async {
+  String generateVerificationString() {
     String ns;
     List<String> _ref1;
     List<Map<String, String>> ids = [];
@@ -89,6 +86,6 @@ class CapsPlugin extends PluginClass {
       ns = features[_k];
       S += "" + ns + "<";
     }
-    return "" + (await SHA1.b64_sha1(S)) + "=";
+    return "" + (SHA1.b64Sha1(S)) + "=";
   }
 }

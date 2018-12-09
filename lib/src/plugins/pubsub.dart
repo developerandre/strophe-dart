@@ -27,12 +27,12 @@ class PubsubBuilder extends StanzaBuilder {
  *    The Strophe.Builder object.
  */
   form(String ns, Map<String, dynamic> options) {
-    XmlNode xmlElement = Strophe
-        .xmlElement('x', attrs: {"xmlns": "jabber:x:data", "type": "submit"});
+    XmlNode xmlElement = Strophe.xmlElement('x',
+        attrs: {"xmlns": "jabber:x:data", "type": "submit"});
     PubsubBuilder aX = this.cnode(xmlElement);
     aX
-        .cnode(Strophe
-            .xmlElement('field', attrs: {"var": "FORM_TYPE", "type": "hidden"}))
+        .cnode(Strophe.xmlElement('field',
+            attrs: {"var": "FORM_TYPE", "type": "hidden"}))
         .cnode(Strophe.xmlElement('value'))
         .t(ns)
         .up()
@@ -115,7 +115,6 @@ class PubsubPlugin extends PluginClass {
     };
   }
 
-// TODO Ideas Adding possible conf values?
 /* Extend Strophe.Connection to have member 'pubsub'.
  */
 /*
@@ -256,13 +255,10 @@ Extend connection object to have plugin name 'pubsub'.
   deleteNode(String node, [Function callback]) {
     String iqid = this.connection.getUniqueId("pubsubdeletenode");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'set',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
-        'delete', {'node': node});
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'set', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
+            'delete', {'node': node});
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
     this.connection.send(iq.tree());
@@ -283,9 +279,9 @@ Extend connection object to have plugin name 'pubsub'.
       [String service, Function success, Function error, int timeout]) {
     //ask for all nodes
     service = service != null && service.isNotEmpty ? service : this.service;
-    StanzaBuilder iq = Strophe
-        .$iq({'from': this.jid, 'to': service, 'type': 'get'}).c(
-            'query', {'xmlns': Strophe.NS['DISCO_ITEMS']});
+    StanzaBuilder iq =
+        Strophe.$iq({'from': this.jid, 'to': service, 'type': 'get'})
+            .c('query', {'xmlns': Strophe.NS['DISCO_ITEMS']});
 
     return this.connection.sendIQ(iq.tree(), success, error, timeout);
   }
@@ -303,13 +299,10 @@ Extend connection object to have plugin name 'pubsub'.
   getConfig(String node, Function callback) {
     String iqid = this.connection.getUniqueId("pubsubconfigurenode");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'get',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
-        'configure', {'node': node});
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
+            'configure', {'node': node});
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
     this.connection.send(iq.tree());
@@ -330,12 +323,9 @@ Extend connection object to have plugin name 'pubsub'.
   String getDefaultNodeConfig(Function callback) {
     String iqid = this.connection.getUniqueId("pubsubdefaultnodeconfig");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'get',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c('default');
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c('default');
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
     this.connection.send(iq.tree());
@@ -396,9 +386,9 @@ Extend connection object to have plugin name 'pubsub'.
       [String service, String subid, Function success, Function error]) {
     String iqid = this.connection.getUniqueId("pubsubunsubscribenode");
     service = service != null && service.isNotEmpty ? service : this.service;
-    StanzaBuilder iq = Strophe
-        .$iq({'from': this.jid, 'to': service, 'type': 'set', 'id': iqid}).c(
-            'pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('unsubscribe', {
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': service, 'type': 'set', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('unsubscribe', {
       'node': node,
       'jid': jid ?? Strophe.getBareJidFromJid(connection.jid)
     });
@@ -441,9 +431,10 @@ Extend connection object to have plugin name 'pubsub'.
     */
   String items(String node, [Function success, Function error, int timeout]) {
     //ask for all items
-    StanzaBuilder iq = Strophe
-        .$iq({'from': this.jid, 'to': this.service, 'type': 'get'}).c('pubsub',
-            {'xmlns': Strophe.NS['PUBSUB']}).c('items', {'node': node});
+    StanzaBuilder iq =
+        Strophe.$iq({'from': this.jid, 'to': this.service, 'type': 'get'})
+            .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
+                'items', {'node': node});
 
     return this.connection.sendIQ(iq.tree(), success, error, timeout);
   }
@@ -463,12 +454,9 @@ Extend connection object to have plugin name 'pubsub'.
   getSubscriptions(Function callback) {
     String iqid = this.connection.getUniqueId("pubsubsubscriptions");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'get',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('subscriptions');
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c('subscriptions');
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
     this.connection.send(iq.tree());
@@ -491,13 +479,10 @@ Extend connection object to have plugin name 'pubsub'.
   getNodeSubscriptions(String node, Function callback) {
     String iqid = this.connection.getUniqueId("pubsubsubscriptions");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'get',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
-        'subscriptions', {'node': node});
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c(
+            'subscriptions', {'node': node});
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
     this.connection.send(iq.tree());
@@ -519,13 +504,10 @@ Extend connection object to have plugin name 'pubsub'.
   getSubOptions(String node, String subid, Function callback) {
     String iqid = this.connection.getUniqueId("pubsubsuboptions");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'get',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
-        'options', {'node': node, 'jid': this.jid});
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB']}).c(
+            'options', {'node': node, 'jid': this.jid});
     if (subid != null && subid.isNotEmpty) iq.attrs({'subid': subid});
 
     this.connection.addHandler(callback, null, 'iq', null, iqid, null);
@@ -554,8 +536,8 @@ Extend connection object to have plugin name 'pubsub'.
       xmlns = {'xmlns': Strophe.NS['PUBSUB_OWNER']};
     }
 
-    StanzaBuilder iq = Strophe
-        .$iq({'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'get', 'id': iqid})
         .c('pubsub', xmlns)
         .c('affiliations', attrs);
 
@@ -580,12 +562,9 @@ Extend connection object to have plugin name 'pubsub'.
       String node, String jid, String affiliation, Function callback) {
     String iqid = this.connection.getUniqueId("pubsubaffiliations");
 
-    StanzaBuilder iq = Strophe.$iq({
-      'from': this.jid,
-      'to': this.service,
-      'type': 'set',
-      'id': iqid
-    }).c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c('affiliations', {
+    StanzaBuilder iq = Strophe.$iq(
+            {'from': this.jid, 'to': this.service, 'type': 'set', 'id': iqid})
+        .c('pubsub', {'xmlns': Strophe.NS['PUBSUB_OWNER']}).c('affiliations', {
       'node': node
     }).c('affiliation', {'jid': jid, 'affiliation': affiliation});
 
